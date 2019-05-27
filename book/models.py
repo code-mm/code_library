@@ -23,14 +23,14 @@ class BookLanguage(models.Model):
 
 class Book(models.Model):
     isbn = models.CharField(max_length=20)
-    title = models.CharField(max_length=100)
-    author = models.CharField(max_length=50)
-    publisher = models.CharField(max_length=20)
+    title = models.CharField(max_length=250)
+    author = models.CharField(max_length=100)
+    publisher = models.CharField(max_length=50, default="")
     cover = models.URLField(max_length=200)
     category = models.CharField(max_length=3)
-    topic = models.CharField(max_length=20)
-    edition = models.IntegerField()
-    release_date = models.DateField()
+    topic = models.CharField(max_length=50)
+    #edition = models.IntegerField()
+    release_date = models.CharField(max_length=20)
     language = models.CharField(max_length=20)
 
 class BookCopies(models.Model):
@@ -44,6 +44,6 @@ class BookCopies(models.Model):
 
 class Loan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    book = models.ForeignKey(BookCopies, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
     from_date = models.DateField()
     to_date = models.DateField()

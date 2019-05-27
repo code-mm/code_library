@@ -26,11 +26,11 @@
             </ul>
         </header>
         <main>
-            <div class="container">
+            <div>
                 <div class="container" id="logoutContainer"></div>
                 <div class="container" id="newBookContainer"></div>
                 <div class="container z-depth-1" id="searchBarContainer"></div>
-                <div class="container" id="bookContainer"></div>
+                <div class="container l10 m10 s10" id="bookContainer"></div>
             </div>
         </main>
         <footer>
@@ -50,11 +50,13 @@
                 if (parts.length == 2) return parts.pop().split(";").shift();
             }
             token = getCookie("csrftoken")
+            console.log(token)
             if (token == undefined) {
                 window.location = "http://localhost:8000/login";
             }
             var user = {};
             var loadBooksBool = true;
+            M.AutoInit();
         </script>
     </body>
 {% endblock %}

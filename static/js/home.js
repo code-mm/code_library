@@ -1,10 +1,11 @@
 $('document').ready(function(){
     $('.sidenav').sidenav();
-    M.AutoInit();
     loadBooks();
+    showUser(token, false)
     initializeSearch();
     setInterval(() => {
         if(token != undefined && loadBooksBool == true){
+            showUser(token, false)
             loadBooks();
         }
     }, 100000)
@@ -20,7 +21,7 @@ $('document').ready(function(){
  *    LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  */
 
-function showUser(token){
+function showUser(token, displayUser=true){
     var xhr = new XMLHttpRequest();
     var apiEndpoint = "http://localhost:8000/api/userProfile/";
 
@@ -29,14 +30,16 @@ function showUser(token){
         if(xhr.readyState === XMLHttpRequest.DONE){
             if(xhr.status == 200){
                 user = xhr.response;
-                var render = false;
-                var waitForRender = setInterval(() => {
-                    if(user != undefined){
-                        renderUser(user);
-                        render = true;
-                        clearInterval(waitForRender);
-                    }
-                }, 100)
+                if(displayUser){
+                    var render = false;
+                    var waitForRender = setInterval(() => {
+                        if(user != undefined){
+                            renderUser(user);
+                            render = true;
+                            clearInterval(waitForRender);
+                        }
+                    }, 100)
+                }
             }
         }
     };
@@ -242,7 +245,6 @@ Required attributes: isbn, title, author, cover, price, owner*/
 
 function getBookList(response){
     var res = [];
-    response = response["results"];
     var currBook;
     for(var i = 0; i < response.length; i++){
         var bookDict = {};
@@ -274,10 +276,15 @@ function loadBooks(rental=false){
                     displayBooks(bookList);
                 }
             }
+            if(xhr.status == 403){
+                window.location.href = "http://localhost:8000/login";
+            }
         }
     };
 
     xhr.open("GET", apiEndpoint);
+    //xhr.setRequestHeader("Authorization", "Token " + token)
+    xhr.setRequestHeader("X-CSRFToken", token)
     xhr.send();
 }
 
@@ -288,8 +295,8 @@ function displayBooks(fetchedBooks, rental=false){
     var count = 0
     while(count<fetchedBooks.length){
         //Decide wether to make a new row
-        if((count) % 3 == 0){
-            row = Math.floor((count) / 3);
+        if((count) % 4 == 0){
+            row = Math.floor((count) / 4);
             $('#bookContainer').append('<div class="row" id="bookRow' + row + '"></div>');
         }
 
@@ -303,9 +310,10 @@ function displayBooks(fetchedBooks, rental=false){
             <script>
                 function rentBook(id){
                     const rentalData = {
-                        book: id,
-                        from_date: $("#dateFrom" + id).val(),
-                        to_date: $("#dateTo" + id).val(),
+                        "book": id,
+                        "user": user.id,
+                        "from_date": $("#dateFrom" + id).val(),
+                        "to_date": $("#dateTo" + id).val(),
                     }
                 
                     var xhr = new XMLHttpRequest();
@@ -314,8 +322,10 @@ function displayBooks(fetchedBooks, rental=false){
                     xhr.responseType = "json";
                     xhr.onreadystatechange = () => {
                         if (xhr.readyState === XMLHttpRequest.DONE){
-                            //showRentals()  
-                            console.log('new rental registered!')
+                            if (xhr.status == 201){
+                                M.toast({html: 'new rental registered'})
+                                console.log('new rental registered!')
+                            }
                         };
                     };
                 
@@ -323,6 +333,103 @@ function displayBooks(fetchedBooks, rental=false){
                     xhr.setRequestHeader("X-CSRFToken", token);
                     xhr.setRequestHeader("Content-Type", "application/json");
                     xhr.send(JSON.stringify(rentalData));
+                }
+                function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, bookedFrom, bookedTo, booked, rental){
+                    if ($("#" + bookId).text() != ""){
+                        $("#" + bookId).empty()
+                    } else {
+                        if (rental){
+                            const extendedCardString =
+                            '<div class="card-content">' + 
+                                '<b>' + bookTitle + '</b>' +
+                            '</div>' +
+                            '<div class="card-action">' +
+                            '<p>Rented from: ' +
+                                '<b>' + bookedFrom + '</b>' +
+                            '</p>' +
+                            '<p>Rented to:' + bookedTo + '</p>' +
+                            '<a class="waves-effect waves-light btn-small" onclick="endLoan(' + booked + ')">End Loan</a>' +
+                            '</div>'
+                            $("#" + bookId).append(extendedCardString)
+                        }
+                        if (!rental){
+                            const extendedCardString = 
+                            '<div class="card-content">' +
+                                '<b>' + bookTitle + '</b>' +
+                                '<p>' + bookIsbn + '</p>' +
+                                '<p>' + bookTopic + '</p>' +
+                                '<p>' + bookCategory + '</p>' +
+                            '</div>' +
+                            '<div class="card-action">' +
+                                '<p>From: <input type="date" min="2018-10-31" id="dateFrom' + bookId + '"</p>' +
+                                '<p>To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"</p>' +
+                                '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
+                            '</div>'
+                            $("#" + bookId).append(extendedCardString)
+                        }
+                    } 
+                    
+                    return
+                }
+            </script>
+            `
+        } else if(count == fetchedBooks.length - 1 && rental == true){
+            bookString += `
+            <script>
+                function endLoan(id){
+                    var xhr = new XMLHttpRequest();
+                    var url = "http://localhost:8000/api/loan/" + id;
+                
+                    xhr.responseType = "json";
+                    xhr.onreadystatechange = () => {
+                        if (xhr.readyState === XMLHttpRequest.DONE){
+                            if (xhr.status == 200){
+                                M.toast({html: 'loan ended!'})
+                            }
+                        };
+                    };
+                
+                    xhr.open("DELETE", url);
+                    xhr.setRequestHeader("X-CSRFToken", token);
+                    xhr.send();
+                }
+                function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, bookedFrom, bookedTo, booked, rental){
+                    if ($("#" + bookId).text() != ""){
+                        $("#" + bookId).empty()
+                    } else {
+                        if (rental){
+                            const extendedCardString =
+                            '<div class="card-content">' + 
+                                '<b>' + bookTitle + '</b>' +
+                            '</div>' +
+                            '<div class="card-action">' +
+                            '<p>Rented from: ' +
+                                '<b>' + bookedFrom + '</b>' +
+                            '</p>' +
+                            '<p>Rented to: ' + bookedTo + '</p>' +
+                            '<a class="waves-effect waves-light btn-small" onclick="endLoan(' + booked + ')">End Loan</a>' +
+                            '</div>'
+                            $("#" + bookId).append(extendedCardString)
+                        }
+                        if (!rental){
+                            const extendedCardString = 
+                            '<div class="card-content">' +
+                                '<b>' + bookTitle + '</b>' +
+                                '<b>' + bookTitle + '</b>' +
+                                '<p>' + bookIsbn + '</p>' +
+                                '<p>' + bookTopic + '</p>' +
+                                '<p>' + bookCategory + '</p>' +
+                            '</div>' +
+                            '<div class="card-action">' +
+                                '<p>From: <input type="date" min="2018-10-31" id="dateFrom$' + bookId + '"</p>' +
+                                '<p>To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"</p>' +
+                                '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
+                            '</div>'
+                            $("#" + bookId).append(extendedCardString)
+                        } 
+                    }
+                    
+                    return
                 }
             </script>
             `
@@ -352,31 +459,17 @@ function renderBookCovers(bookId){
 
 function makeBookCard(book, rental=false){
     var bookCardString = `
-    <div class="col s4 m4">
-        <div class="card">
-            <div class="card-image">
-            <img src="${book.cover}">
+    <div class="col s3 m3 l3">
+        <div class="card">` +
+            (rental ? `<div class="card-image" onClick="expandCard(${book.id}, '${book.title}', '${book.isbn}', '${book.topic}', '${book.category}', '${book.from_date}', '${book.to_date}', ${book.loan_id}, ${rental})">` : `<div class="card-image" onClick="expandCard(${book.id}, '${book.title}', '${book.isbn}', '${book.topic}', '${book.category}', undefined, undefined, undefined, ${rental})">`) +
+            `<img src="${book.cover}">
             <span class="card-title"></span>
             </div>
-            <div class="card-content">
-            <b>${book.title}</b>
-            <p>This book was written by:<b> ${book.author}</b></p>
-            <p>ISBN: <b>${book.isbn}</b></p>
-            <p>Category: ${book.category}</p>
-            <p>Topic: ${book.topic}</p>
-            </div>
+            <div id="${book.id}"></div>
+        </div>
+    </div>
     `;
-    if (rental == false){
-        bookCardString += `<div class="card-action" id="${book.id}">
-                <p>From: <input type="date" min="2018-10-31" id="dateFrom${book.id}"</p>
-                <p>To: <input type="date" min="2018-10-31" id="dateTo${book.id}"</p>
-                <a class="waves-effect waves-light btn-small" onclick="rentBook(${book.id})" id="book${book.id}">Rent this book</a>
-                </div>
-            </div>
-        </div>`
-    } else {
-        bookCardString += "</div></div>";
-    }
+    
     return bookCardString;
 }
 
@@ -406,15 +499,15 @@ function loadRentalList(bookList){
 }
 
 function makeRentalList(fetchedRentals, loans){
-    var loanIds = new Set();
-    for (var i = 0; i < loans.length; i++){
-        loanIds.add(loans[i]["book"]);
-    }
-
     var res = [];
-    for(var j = 0; j < fetchedRentals.length; j++){
-        if (loanIds.has(fetchedRentals[j]["id"])){
-            res.push(fetchedRentals[j]);
+    for (var i = 0; i < loans.length; i++){
+        for(var j = 0; j < fetchedRentals.length; j++){
+            if (fetchedRentals[j]["id"] == loans[i]["book"]){
+                fetchedRentals[j]["loan_id"] = loans[i]["id"]
+                fetchedRentals[j]["from_date"] = loans[i]["from_date"]
+                fetchedRentals[j]["to_date"] = loans[i]["to_date"]
+                res.push(fetchedRentals[j]);
+            }
         }
     }
     displayBooks(res, true);
