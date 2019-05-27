@@ -54,8 +54,8 @@ function renderUser(user){
         <div class="row">
         <div class="col s10 offset-s1">
             <div class="row">
-                <p>You are currently logged in as: ${user["first_name"]} ${user["last_name"]}!</p>
-                <a class="waves-effect waves-light btn-small" onclick="logout()">Logout</a>
+                <p class="flow-text">You are currently logged in as: ${user["first_name"]} ${user["last_name"]}!</p>
+                <a class="waves-effect waves-light btn-large" onclick="logout()">Logout</a>
             </div>
         </div>
         </div>
@@ -108,7 +108,7 @@ $('#myAccount').click(function(){
 function initializeSearch(){
     let searchBooksString = `
     <div class="input-field" style="margin: 3rem;">
-        <input type="text" id="search" placeholder="Search for your favourite book! (By entering title, author, isbn, topic or category)">
+        <input type="text" id="search" placeholder="Search for a book, by title, author, isbn, topic or category">
     </div>
     `
 
@@ -294,16 +294,18 @@ function displayBooks(fetchedBooks, rental=false){
     var row = 0;
     var count = 0
     while(count<fetchedBooks.length){
+        const screensize = $("#bookContainer").width();
+        var booksPerRow = 3;
+        if (screensize >= 1000){
+            booksPerRow = 6;
+        }
+
         //Decide wether to make a new row
-        if((count) % 4 == 0){
-            row = Math.floor((count) / 4);
+        if((count) % booksPerRow == 0){
+            row = Math.floor((count) / booksPerRow);
             $('#bookContainer').append('<div class="row" id="bookRow' + row + '"></div>');
         }
 
-        /*let author = fetchedBooks[i].author;
-        let isbn = fetchedBooks[i].isbn;
-        let cover = fetchedBooks[i].cover;
-        let price = fetchedBooks[i].price;*/
         let bookString = makeBookCard(fetchedBooks[count], rental);
         if(count == fetchedBooks.length - 1 && rental == false){
             bookString += `
@@ -323,8 +325,10 @@ function displayBooks(fetchedBooks, rental=false){
                     xhr.onreadystatechange = () => {
                         if (xhr.readyState === XMLHttpRequest.DONE){
                             if (xhr.status == 201){
-                                M.toast({html: 'new rental registered'})
+                                M.toast({html: '<p class="flow-text">new rental registered</p>'})
                                 console.log('new rental registered!')
+                            } else if (xhr.status == 400){
+                                M.toast({html: '<p class="flow-text">Book is not available right now</p>'})
                             }
                         };
                     };
@@ -355,14 +359,14 @@ function displayBooks(fetchedBooks, rental=false){
                         if (!rental){
                             const extendedCardString = 
                             '<div class="card-content">' +
-                                '<b>' + bookTitle + '</b>' +
-                                '<p>' + bookIsbn + '</p>' +
-                                '<p>' + bookTopic + '</p>' +
-                                '<p>' + bookCategory + '</p>' +
+                                '<p class="flow-text"><b>' + bookTitle + '</b></p>' +
+                                '<p class="flow-text">' + bookIsbn + '</p>' +
+                                '<p class="flow-text">' + bookTopic + '</p>' +
+                                '<p class="flow-text">' + bookCategory + '</p>' +
                             '</div>' +
                             '<div class="card-action">' +
-                                '<p>From: <input type="date" min="2018-10-31" id="dateFrom' + bookId + '"</p>' +
-                                '<p>To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"</p>' +
+                                '<p class="flow-text">From: <input type="date" min="2018-10-31" id="dateFrom' + bookId + '"/></p>' +
+                                '<p class="flow-text">To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"/></p>' +
                                 '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
                             '</div>'
                             $("#" + bookId).append(extendedCardString)
@@ -384,7 +388,7 @@ function displayBooks(fetchedBooks, rental=false){
                     xhr.onreadystatechange = () => {
                         if (xhr.readyState === XMLHttpRequest.DONE){
                             if (xhr.status == 200){
-                                M.toast({html: 'loan ended!'})
+                                M.toast({html: 'You successfully ended your loan!'})
                             }
                         };
                     };
@@ -414,15 +418,14 @@ function displayBooks(fetchedBooks, rental=false){
                         if (!rental){
                             const extendedCardString = 
                             '<div class="card-content">' +
-                                '<b>' + bookTitle + '</b>' +
-                                '<b>' + bookTitle + '</b>' +
-                                '<p>' + bookIsbn + '</p>' +
-                                '<p>' + bookTopic + '</p>' +
-                                '<p>' + bookCategory + '</p>' +
+                                '<p class="flow-text"><b>' + bookTitle + '</b></p>' +
+                                '<p class="flow-text">' + bookIsbn + '</p>' +
+                                '<p class="flow-text">' + bookTopic + '</p>' +
+                                '<p class="flow-text">' + bookCategory + '</p>' +
                             '</div>' +
                             '<div class="card-action">' +
-                                '<p>From: <input type="date" min="2018-10-31" id="dateFrom$' + bookId + '"</p>' +
-                                '<p>To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"</p>' +
+                                '<p class="flow-text">From: <input type="date" min="2018-10-31" id="dateFrom$' + bookId + '"/></p>' +
+                                '<p class="flow-text">To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"/></p>' +
                                 '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
                             '</div>'
                             $("#" + bookId).append(extendedCardString)
@@ -459,7 +462,7 @@ function renderBookCovers(bookId){
 
 function makeBookCard(book, rental=false){
     var bookCardString = `
-    <div class="col s3 m3 l3">
+    <div class="container col s4 m4 l4 xl2">
         <div class="card">` +
             (rental ? `<div class="card-image" onClick="expandCard(${book.id}, '${book.title}', '${book.isbn}', '${book.topic}', '${book.category}', '${book.from_date}', '${book.to_date}', ${book.loan_id}, ${rental})">` : `<div class="card-image" onClick="expandCard(${book.id}, '${book.title}', '${book.isbn}', '${book.topic}', '${book.category}', undefined, undefined, undefined, ${rental})">`) +
             `<img src="${book.cover}">
