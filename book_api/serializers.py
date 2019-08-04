@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from rest_framework import serializers
 
-from book.models import Book, BookAuthor, BookPublisher, BookCategory, BookTopic, BookLanguage, BookCopies, Loan
+from book.models import Book, BookCopies, Loan
 
 
 #
@@ -33,7 +33,7 @@ class BookSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ('id', 'isbn', 'title', 'author', 'publisher', 'cover', 'copies', 'category', 'topic', 'release_date', 'language')
+        fields = ('id', 'isbn', 'title', 'author', 'publisher', 'cover', 'copies', 'category', 'topic', 'release_date', 'language', 'code_book_id')
 
 
 #
