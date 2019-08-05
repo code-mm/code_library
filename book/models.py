@@ -7,13 +7,14 @@ from django.contrib.auth.models import User
 
 class Book(models.Model):
     isbn = models.CharField(max_length=20)
-    title = models.CharField(max_length=250)
+    title1 = models.CharField(max_length=250)
+    title2 = models.CharField(max_length=250)
     author = models.CharField(max_length=100)
     publisher = models.CharField(max_length=50)
     cover = models.URLField(max_length=50)
-    category = models.CharField(max_length=50)
-    topic = models.CharField(max_length=50)
-    release_date = models.CharField(max_length=20)
+    designation = models.CharField(max_length=50)
+    subject = models.CharField(max_length=50)
+    publication_year = models.CharField(max_length=20)
     language = models.CharField(max_length=20)
     code_book_id = models.CharField(max_length=20, default='')
 

@@ -58,7 +58,7 @@ class Search(generics.ListAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def list(self, request, searchTerm):
-        vector = SearchVector('title', 'author', 'isbn', "topic", "category")
+        vector = SearchVector('title1', 'title2', 'author', 'isbn', 'designation', 'subject')
         searchQuery = SearchQuery(searchTerm)
         books = modelBook.objects.annotate(rank=SearchRank(vector, searchQuery)).order_by('-rank')
         serialized = self.serializer_class(books, many=True)
