@@ -26,14 +26,18 @@ class BookCopiesSerializer(serializers.ModelSerializer):
 
 class BookSerializer(serializers.ModelSerializer):
     copies = serializers.SerializerMethodField()
+    no_copies = serializers.SerializerMethodField()
 
     def get_copies(self, obj):
         serialized = BookCopiesSerializer(BookCopies.objects.filter(book=obj.id), many=True)
         return  serialized.data
 
+    def get_no_copies(self, obj):
+        return len(BookCopies.objects.filter(book=obj.id))
+
     class Meta:
         model = Book
-        fields = ('id', 'isbn', 'title1', 'title2', 'author', 'publisher', 'cover', 'copies', 'designation', 'subject', 'publication_year', 'language', 'code_book_id')
+        fields = ('id', 'isbn', 'title1', 'title2', 'author', 'publisher', 'cover', 'no_copies', 'copies', 'designation', 'subject', 'publication_year', 'language', 'code_book_id')
 
 
 #
