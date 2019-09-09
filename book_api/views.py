@@ -1,123 +1,149 @@
-from django.db.models import Q
 from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
-from rest_framework import status, permissions, generics
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.http import HttpResponse
+from datetime import datetime
 
-from book.models import Book as modelBook
-from book.models import BookCopies as modelBookCopies
-from book.models import Loan as modelLoan
-from book_api.serializers import UserSerializer
-from book_api.serializers import BookSerializer
-from book_api.serializers import LoanSerializer
-from book_api.serializers import LoanOwnSerializer
+from book import models
+from book_api import serializers
 
 
-#
 # user
-#
-
-class UserProfile(generics.ListAPIView):
-    serializer_class = UserSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get_queryset(self):
-        return User.objects.get(pk=self.request.user.id)
-
-    def list(self, request):
-        queryset = self.get_queryset()
-        serialized = self.serializer_class(queryset)
-        return Response(serialized.data)
+class UserProfile(APIView):
+    def get(self, request, *args, **kwargs):
+        user = models.User.objects.get(pk=request.user.id)
+        user_serialized = serializers.User(user)
+        return Response(user_serialized.data, status=status.HTTP_200_OK)
 
 
-#
 # book
-#
-
-class Book(generics.ListAPIView):
-    serializer_class = BookSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get_queryset(self):
-        try:
-            id = self.kwargs['id']
-        except KeyError:
-            return modelBook.objects.all().order_by('-id')
-        else:
-            return modelBook.objects.filter(id=id)
-
-
-#
-# search
-#
-
-class Search(generics.ListAPIView):
-    serializer_class = BookSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def list(self, request, searchTerm):
-        vector = SearchVector('title1', 'title2', 'author', 'isbn', 'designation', 'subject')
-        searchQuery = SearchQuery(searchTerm)
-        books = modelBook.objects.annotate(rank=SearchRank(vector, searchQuery)).order_by('-rank')
-        serialized = self.serializer_class(books, many=True)
-        return Response(serialized.data)
-
-
-#
-# loan
-#
-
-class Loan(generics.ListCreateAPIView, generics.DestroyAPIView):
-    serializer_class = LoanSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get_queryset(self):
-        try:
-            id = self.kwargs['id']
-        except KeyError:
-            return modelLoan.objects.all().order_by('-id')
-        else:
-            return modelLoan.objects.filter(book=id).order_by('-id')
-
-    def create(self, request):
-        serialized = self.serializer_class(data=request.data, context={'request': request})
-        # check if data is valid
-        if serialized.is_valid():
-            # check if book copy exists and not already lent
+class Book(APIView):
+    def get(self, request, book_id=None, *args, **kwargs):
+        if book_id != None:
             try:
-                book = modelBook.objects.get(pk=request.data['book'])
-            except modelBook.DoesNotExist:
-                return Response({'Error': 'Book does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-            if modelLoan.objects.filter(book_id=book.id).filter(Q(from_date__gte=request.data['from_date'], from_date__lt=request.data['to_date']) | Q(to_date__gt=request.data['from_date'], to_date__lte=request.data['to_date'])).exists():
-                return Response({'Error': 'Book already lent for given date duration'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # write the loan details to database
-            serialized.save()
-            return Response({"Success":"Successfully created"}, status=status.HTTP_201_CREATED)
-
-        return Response({'Error': 'Object does not exist or date format invalid.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, id):
-        try:
-            loan = modelLoan.objects.get(pk=id)
-        except modelLoan.DoesNotExist:
-            return Response({'Error': 'Loan does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-        if loan.user_id == self.request.user.id:
-            loan.delete()
+                book = models.Book.objects.get(pk=book_id)
+                book_serialized = serializers.Book(book)
+                return Response(book_serialized.data, status=status.HTTP_200_OK)
+            except models.Book.DoesNotExist:
+                return Response({'Error': 'Book does not exist'}, status=status.HTTP_404_NOT_FOUND)
         else:
-            return Response({'Error': 'Not owner of loan'}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(status=status.HTTP_200_OK)
+            books = models.Book.objects.all()
+            books_serialized = serializers.Book(books, many=True)
+            return Response(books_serialized.data, status=status.HTTP_200_OK)
 
-class LoanOwn(generics.ListAPIView):
-    serializer_class = LoanOwnSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+class BookCopies(APIView):
+    def get(self, request, book_id=None, *args, **kwargs):
+        if book_id != None:
+            try:
+                book_copies = models.BookCopies.objects.filter(book=book_id)
+                book_copies_serialized = serializers.BookCopies(book_copies, many=True)
+                return Response(book_copies_serialized.data, status=status.HTTP_200_OK)
+            except models.BookCopies.DoesNotExist:
+                return Response({'Error': 'Book copy does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            book_copies = models.BookCopies.objects.all()
+            book_copies_serialized = serializers.BookCopies(book_copies, many=True)
+            return Response(book_copies_serialized.data, status=status.HTTP_200_OK)
 
-    def get_queryset(self):
-        return modelLoan.objects.filter(user=self.request.user.id)
+class BookNew(APIView):
+    def get(self, request, *args, **kwargs):
+        books = models.BookCopies.objects.order_by('-date_added').distinct()[:10].select_related('book').only('book')
+        book_list = []
+        for book in books:
+            book_list.append(book.book)
+        book_list_serialized = serializers.Book(book_list, many=True)
+        return Response(book_list_serialized.data)
 
-    def list(self, request):
-        queryset = self.get_queryset()
-        serialized = self.serializer_class(queryset, many=True)
-        return Response(serialized.data)
+
+# search
+class Search(APIView):
+    def get(self, request, search_term):
+        vector = SearchVector('title1', 'title2', 'author', 'isbn', 'designation', 'subject')
+        search_query = SearchQuery(search_term)
+        books = models.Book.objects.annotate(rank=SearchRank(vector, search_query)).order_by('-rank')
+        books_serialized = serializers.Book(books, many=True)
+        return Response(books_serialized.data)
+
+
+# loan
+class LoanReserved(APIView):
+    def get(self, request, loan_id=None, *args, **kwargs):
+        if loan_id != None:
+            try:
+                loan = models.LoanReserved.objects.filter(user=self.request.user.id).get(pk=loan_id)
+                loan_serialized = serializers.LoanReserved(loan)
+                return Response(loan_serialized.data, status=status.HTTP_200_OK)
+            except models.LoanReserved.DoesNotExist:
+                return Response({'Error': 'Loan does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            loans = models.LoanReserved.objects.filter(user=self.request.user.id)
+            loans_serialized = serializers.LoanReserved(loans, many=True)
+            return Response(loans_serialized.data, status=status.HTTP_200_OK)
+
+    def post(self, request, loan_id=None, *args, **kwargs):
+        loan_serialized = serializers.LoanReserved(data=request.data, context={'request': request})
+        MAX_LOANS = 4
+        MAX_LOAN_DURATION = 10
+
+        # check if user exceeds maximum loans
+        if models.Loan.objects.filter(user=request.user.id).count() >= MAX_LOANS:
+            return Response({'Error': 'Maximum loans reached'}, status=status.HTTP_400_BAD_REQUEST)
+        if loan_serialized.is_valid():
+            # check if duration exceeds maximum loan duration
+            if request.data['duration'] > MAX_LOAN_DURATION:
+                return Response({'Error': 'Maximum loan duration exceeded'}, status=status.HTTP_400_BAD_REQUEST)
+            loan_serialized.save()
+            return Response({'Success': 'Loan reservation created'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'Error': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, loan_id=None, *args, **kwargs):
+        if loan_id != None:
+            try:
+                loan = models.LoanReserved.objects.filter(user=self.request.user.id).get(pk=loan_id)
+                loan.delete()
+                return Response({'Success': 'Loan deleted'}, status=status.HTTP_204_NO_CONTENT)
+            except models.LoanReserved.DoesNotExist:
+                return Response({'Error': 'Loan does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'Error': 'Loan does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+class LoanActive(APIView):
+    def get(self, request, loan_id=None, *args, **kwargs):
+        if loan_id != None:
+            try:
+                loan = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lt=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now())).get(pk=loan_id)
+                loan_serialized = serializers.Loan(loan)
+                return Response(loan_serialized.data, status=status.HTTP_200_OK)
+            except models.Loan.DoesNotExist:
+                return Response({'Error': 'Loan does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            loans = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lt=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now()))
+            loans_serialized = serializers.Loan(loans, many=True)
+            return Response(loans_serialized.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, loan_id=None, *args, **kwargs):
+        if loan_id != None:
+            try:
+                loan = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lt=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now())).get(pk=loan_id)
+                loan.delete()
+                return Response({'Success': 'Loan deleted'}, status=status.HTTP_204_NO_CONTENT)
+            except models.Loan.DoesNotExist:
+                return Response({'Error': 'Loan does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'Error': 'Loan does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+class LoanHistory(APIView):
+    def get(self, request, loan_id=None, *args, **kwargs):
+        if loan_id != None:
+            try:
+                loan = models.Loan.objects.filter(user=self.request.user.id).filter(to_date__lt=datetime.date(datetime.now())).get(pk=loan_id)
+                loan_serialized = serializers.Loan(loan)
+                return Response(loan_serialized.data, status=status.HTTP_200_OK)
+            except models.Loan.DoesNotExist:
+                return Response({'Error': 'Loan does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            loans = models.Loan.objects.filter(user=self.request.user.id).filter(to_date__lt=datetime.date(datetime.now()))
+            loans_serialized = serializers.Loan(loans, many=True)
+            return Response(loans_serialized.data, status=status.HTTP_200_OK)

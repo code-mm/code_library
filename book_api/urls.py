@@ -1,17 +1,19 @@
 from django.urls import path
 
-from book_api.views import UserProfile
-from book_api.views import Book
-from book_api.views import Search
-from book_api.views import Loan
-from book_api.views import LoanOwn
+from book_api import views
+
 
 urlpatterns = [
-    path('userProfile/', UserProfile.as_view()),
-    path('book/', Book.as_view()),
-    path('book/<int:id>/', Book.as_view()),
-    path('search/<str:searchTerm>/', Search.as_view()),
-    path('loan/', Loan.as_view()),
-    path('loan/<int:id>/', Loan.as_view()),
-    path('loanOwn/', LoanOwn.as_view()),
+    path('userProfile/', views.UserProfile.as_view()),
+    path('book/', views.Book.as_view()),
+    path('book/<int:book_id>/', views.Book.as_view()),
+    path('book/<int:book_id>/copies/', views.BookCopies.as_view()),
+    path('book/new/', views.BookNew.as_view()),
+    path('search/<str:search_term>/', views.Search.as_view()),
+    path('loan/reserved/', views.LoanReserved.as_view()),
+    path('loan/reserved/<int:loan_id>/', views.LoanReserved.as_view()),
+    path('loan/active/', views.LoanActive.as_view()),
+    path('loan/active/<int:loan_id>/', views.LoanActive.as_view()),
+    path('loan/history/', views.LoanHistory.as_view()),
+    path('loan/history/<int:loan_id>/', views.LoanHistory.as_view()),
 ]

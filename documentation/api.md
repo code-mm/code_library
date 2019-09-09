@@ -1,11 +1,12 @@
 # API documentation
 
+
 ## Authentication -> /
 
 * login/
 Forwards to the Google oauth2 login screen.
 The login returns the cookies sessionId and csrftoken. For reading of the API only the sessionId cookie is required.
-For write access the csrftoken must be given in the header X-CSRFToken.
+For write access the csrftoken must also be given in the header X-CSRFToken.
 
 * logout/
 Removes the session from the Django authentication system.
@@ -22,22 +23,28 @@ Description: Returns details about the logged in user.
 
 ## Books -> /api/book
 
-* /<bookId>/
+* /<book_id>/
 Allowed method: GET
 Required arguments: None
-Optional arguments: bookId
+Optional arguments: book_id
 Description: Returns a list of all books or a single book.
 
-* /cover/<bookId>/
+* /<book_id>/copies/
 Allowed method: GET
-Required arguements: bookId
-Optional arguements: None
-Description: Returns the cover of a single book. If book doesn't exist or field in database is empty it returns an http 404 error.
+Required arguments: book_id
+Optional arguments: None
+Description: Returns all physical copies of a book.
+
+* /new/
+Allowed method: GET
+Required arguments: None
+Optional arguments: None
+Description: Returns a list of the last 10 books added to the library.
 
 
 ## Search -> /api/search
 
-* /<searchTerm>/
+* /<search_term>/
 Allowed method: GET
 Required arguments: searchTerm
 Optional arguments: None
@@ -46,27 +53,38 @@ Description: Returns a full text search of books in the database.
 
 ## Loan -> /api/loan
 
-* /<bookCopyId>/
-Allowed method: GET
-Required arguments: NONE
-Optional arguments: bookCopyId
-Description: Returns list of all or a single loan.
-
-* /
-Allowed method: POST
-Required arguments: bookCopyId, from_date, to_date
+* /reserved/
+Allowed method: GET, POST
+Required arguments: None
 Optional arguments: None
-Description: Creates loan of requested copy of a book.
-Example (json): {"book": 2, "from_date": "2019-01-01", "to_date": "2019-01-15"}
+Description: Return a list of all reserved loans, of the logged in user, or create a new one.
 
-* /<loanId>/
-Allowed method: DELETE
-Required arguments: loanId
+* /reserved/<loan_id>/
+Allowed method: GET, DELETE
+Required arguments: loan_id
 Optional arguments: None
-Description: Deletes loan of a given copy of a book.
+Description: Return a reserved loan, of the logged in user, or delete one.
 
-* /loanOwn/
+* /active/
 Allowed method: GET
 Required arguments: None
-Optional arguements: None
-Description: Returns a list with all the loans of the logged in user.
+Optional arguments: None
+Description: Return a list of all active loans, of the logged in user.
+
+* /active/<loan_id>/
+Allowed method: GET, DELETE
+Required arguments: loan_id
+Optional arguments: None
+Description: Return a active loan, of the logged in user, or delete one.
+
+* /history/
+Allowed method: GET
+Required arguments: None
+Optional arguments: None
+Description: Return a list of all prior active loans, of the logged in user.
+
+* /history/<loan_id>/
+Allowed method: GET
+Required arguments: loan_id
+Optional arguments: None
+Description: Return a prior active loan, of the logged in user.
