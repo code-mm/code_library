@@ -2,6 +2,10 @@ nav {
     background: rgb(38, 153, 251);
 }
 
+.card-text {
+    font-size: 1rem;
+}
+
 body {
     display: flex;
     min-height: 100vh;

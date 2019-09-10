@@ -1,15 +1,13 @@
-$('document').ready(function(){
-    $('.sidenav').sidenav();
+$("document").ready(function() {
+  $(".sidenav").sidenav();
+  loadBooks();
+  showUser(token, false);
+  initializeSearch();
+  if (token != undefined && loadBooksBool == true) {
+    showUser(token, false);
     loadBooks();
-    showUser(token, false)
-    initializeSearch();
-    setInterval(() => {
-        if(token != undefined && loadBooksBool == true){
-            showUser(token, false)
-            loadBooks();
-        }
-    }, 100000)
-})
+  }
+});
 
 /***
  *    ██╗LLL██╗███████╗███████╗██████╗L██████╗L██╗███████╗██████╗L██╗LLLLLL█████╗L██╗LLL██╗
@@ -21,40 +19,42 @@ $('document').ready(function(){
  *    LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  */
 
-function showUser(token, displayUser=true){
-    var xhr = new XMLHttpRequest();
-    var apiEndpoint = "http://localhost:8000/api/userProfile/";
+function showUser(token, displayUser = true) {
+  var xhr = new XMLHttpRequest();
+  var apiEndpoint = "/api/userProfile/";
 
-    xhr.responseType = "json";
-    xhr.onreadystatechange = () => {
-        if(xhr.readyState === XMLHttpRequest.DONE){
-            if(xhr.status == 200){
-                user = xhr.response;
-                if(displayUser){
-                    var render = false;
-                    var waitForRender = setInterval(() => {
-                        if(user != undefined){
-                            renderUser(user);
-                            render = true;
-                            clearInterval(waitForRender);
-                        }
-                    }, 100)
-                }
+  xhr.responseType = "json";
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      if (xhr.status == 200) {
+        user = xhr.response;
+        if (displayUser) {
+          var render = false;
+          var waitForRender = setInterval(() => {
+            if (user != undefined) {
+              renderUser(user);
+              render = true;
+              clearInterval(waitForRender);
             }
+          }, 100);
         }
-    };
+      }
+    }
+  };
 
-    xhr.open("GET", apiEndpoint);
-    //xhr.setRequestHeader("Authorization", "Token " + token)
-    xhr.send();
+  xhr.open("GET", apiEndpoint);
+  //xhr.setRequestHeader("Authorization", "Token " + token)
+  xhr.send();
 }
 
-function renderUser(user){
-    let logoutString = `
+function renderUser(user) {
+  let logoutString = `
         <div class="row">
         <div class="col s10 offset-s1">
             <div class="row">
-                <p class="flow-text">You are currently logged in as: ${user["first_name"]} ${user["last_name"]}!</p>
+                <p class="card-text">You are currently logged in as: ${
+                  user["first_name"]
+                } ${user["last_name"]}!</p>
                 <a class="waves-effect waves-light btn-large" onclick="logout()">Logout</a>
             </div>
         </div>
@@ -62,7 +62,7 @@ function renderUser(user){
         <script>
             function logout(){
                 var xhr = new XMLHttpRequest();
-                var url = "http://localhost:8000/logout/"
+                var url = "/logout/"
             
                 xhr.responseType = "json"
                 xhr.onreadystatechange = () => {
@@ -75,24 +75,24 @@ function renderUser(user){
                 xhr.open("GET", url);
                 xhr.send();
 
-                window.location = "http://localhost:8000/login";
+                window.location = "/login";
             }
         </script>
-        `
-    $('#logoutContainer').append(logoutString);
-    $('#logoutContainer').addClass('z-depth-4')
+        `;
+  $("#logoutContainer").append(logoutString);
+  $("#logoutContainer").addClass("z-depth-4");
 }
 
-$('#myAccount').click(function(){
-    showUser()
-    loadBooks(true)
+$("#myAccount").click(function() {
+  showUser();
+  loadBooks(true);
 
-    loadBooksBool = false;
-    $('#bookContainer').empty();
-    $('#newBookContainer').empty();
-    $('#searchBarContainer').empty();
-    $('#addBookButton').removeClass('disabled');
-    $('#myAccount').addClass('disabled');
+  loadBooksBool = false;
+  $("#bookContainer").empty();
+  $("#newBookContainer").empty();
+  $("#searchBarContainer").empty();
+  $("#addBookButton").removeClass("disabled");
+  $("#myAccount").addClass("disabled");
 });
 
 /***
@@ -105,133 +105,40 @@ $('#myAccount').click(function(){
  *    LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  */
 
-function initializeSearch(){
-    let searchBooksString = `
+function initializeSearch() {
+  let searchBooksString = `
     <div class="input-field" style="margin: 3rem;">
         <input type="text" id="search" placeholder="Search for a book, by title, author, isbn, topic or category">
     </div>
-    `
+    `;
 
-    $('#searchBarContainer').append(searchBooksString)
-    $('#searchBarContainer').addClass('z-depth-1')
+  $("#searchBarContainer").append(searchBooksString);
+  $("#searchBarContainer").addClass("z-depth-1");
 
-    $('#search').on('input', function(){
-        searchBooks($('#search').val())
-    });
+  $("#search").on("input", function() {
+    searchBooks($("#search").val());
+  });
 }
 
-function searchBooks(query){
-    var xhr = new XMLHttpRequest();
-    var url = "http://localhost:8000/api/search/" + query;
+function searchBooks(query) {
+  var xhr = new XMLHttpRequest();
+  var url = "/api/search/" + query;
 
-    xhr.responseType = "json";
-    xhr.onreadystatechange = () => {
-        if (xhr.readyState === XMLHttpRequest.DONE){
-            if(xhr.status == 200){
-                loadBooksBool = false;
-                $('bookContainer').empty();
-                displayBooks(xhr.response);
-            }
-        };
-    };
-
-    xhr.open("GET", url);
-    xhr.setRequestHeader("Authorization", "Token " + token)
-    xhr.send();
-}
-
-/***
- *    ██████╗LL██████╗LL██████╗L██╗LL██╗L██████╗██████╗L███████╗L█████╗L████████╗██╗L██████╗L███╗LLL██╗
- *    ██╔══██╗██╔═══██╗██╔═══██╗██║L██╔╝██╔════╝██╔══██╗██╔════╝██╔══██╗╚══██╔══╝██║██╔═══██╗████╗LL██║
- *    ██████╔╝██║LLL██║██║LLL██║█████╔╝L██║LLLLL██████╔╝█████╗LL███████║LLL██║LLL██║██║LLL██║██╔██╗L██║
- *    ██╔══██╗██║LLL██║██║LLL██║██╔═██╗L██║LLLLL██╔══██╗██╔══╝LL██╔══██║LLL██║LLL██║██║LLL██║██║╚██╗██║
- *    ██████╔╝╚██████╔╝╚██████╔╝██║LL██╗╚██████╗██║LL██║███████╗██║LL██║LLL██║LLL██║╚██████╔╝██║L╚████║
- *    ╚═════╝LL╚═════╝LL╚═════╝L╚═╝LL╚═╝L╚═════╝╚═╝LL╚═╝╚══════╝╚═╝LL╚═╝LLL╚═╝LLL╚═╝L╚═════╝L╚═╝LL╚═══╝
- *    LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
- 
-
-$('#addBook').click(function(){
-    if(login == true){
+  xhr.responseType = "json";
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      if (xhr.status == 200) {
         loadBooksBool = false;
-        wipePage();
-        $('#addBookButton').addClass('disabled');
-        $('#myAccount').removeClass('disabled');
-        $('#newBookContainer').append(newBookFormString)
-        $('#newBookContainer').addClass('z-depth-4')
+        $("bookContainer").empty();
+        displayBooks(xhr.response);
+      }
     }
-})
+  };
 
-let newBookFormString = `
-<div class="row">
-    <h3>Create a new book entry:</h3>
-</div>
-<div class="divider"></div>
-<div class="row">
-    <form class="col s10 offset-s1">
-        <div class="row">
-            <div class="input-field col s6">
-                <input type ="text" id="title">
-                <label for="title">Title</label>
-            </div>
-            <div class="input-field col s6">
-                <input type ="text" id="author">
-                <label for="author">Author</label>
-            </div>
-        </div>
-        <div class="row">
-            <div class="input-field col s6">
-                <input type ="text" id="isbn">
-                <label for="isbn">ISBN</label>
-            </div>
-            <div class="input-field col s6">
-                <input type ="text" id="cover">
-                <label for="cover">Cover</label>
-            </div>
-        </div>
-        <div class="row">
-            <div class="input-field col s6">
-                <input type ="number" step="0.1" id="price">
-                <label for="price">Price per day</label>
-            </div>
-            <div class="input-field col s6">
-                <a class="waves-effect waves-light btn" id="createBook">Create a new Entry</a>
-            </div>
-            <script>
-                $('#createBook').click(function(){
-                    const bookData = {
-                        isbn: $("#isbn").val(),
-                        title: $("#title").val(),
-                        author: $("#author").val(),
-                        cover: $("#cover").val(),
-                        price: $("#price").val(),
-                        owner: user.user,
-                    }
-                
-                    var xhr = new XMLHttpRequest();
-                    var url = "http://localhost:8000/api/book/create/";
-                
-                    xhr.responseType = "json";
-                    xhr.onreadystatechange = () => {
-                        if (xhr.readyState === XMLHttpRequest.DONE){
-                            M.toast({html: 'Book has been created!'})
-                        };
-                    };
-                
-                    xhr.open("POST", url);
-                    xhr.setRequestHeader("Authorization", "Token " + token)
-                    xhr.setRequestHeader("Content-Type", "application/json");
-                    xhr.send(JSON.stringify(bookData));
-                })
-            </script>
-        </div>
-    </form>
-</div>
-`
-*/
-
-/** create/
-Allowed method: POST
-Required attributes: isbn, title, author, cover, price, owner*/
+  xhr.open("GET", url);
+  xhr.setRequestHeader("Authorization", "Token " + token);
+  xhr.send();
+}
 
 /***
  *    ██████╗LL██████╗LL██████╗L██╗LL██╗██████╗L██╗███████╗██████╗L██╗LLLLLL█████╗L██╗LLL██╗
@@ -243,152 +150,167 @@ Required attributes: isbn, title, author, cover, price, owner*/
  *    LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  */
 
-function getBookList(response){
-    var res = [];
-    var currBook;
-    for(var i = 0; i < response.length; i++){
-        var bookDict = {};
-        currBook = response[i];
-        bookDict["id"] = currBook["id"];
-        bookDict["title"] = currBook["title"];
-        bookDict["isbn"] = currBook["isbn"];;
-        bookDict["author"] = currBook["author"];
-        bookDict["cover"] = currBook["cover"];
-        bookDict["category"] = currBook["category"];
-        bookDict["topic"] = currBook["topic"];
-        res.push(bookDict);
+function getBookList(response) {
+  var res = [];
+  var currBook;
+  for (var i = 0; i < response.length; i++) {
+    var bookDict = {};
+    currBook = response[i];
+    bookDict["id"] = currBook["id"];
+    bookDict["title"] = `${currBook["title1"]} ${
+      currBook["title2"] ? "(" + currBook["title2"] + ")" : ""
+    }`;
+    bookDict["isbn"] = currBook["isbn"];
+    bookDict["author"] = currBook["author"];
+    bookDict["cover"] = currBook["cover"];
+    bookDict["category"] = currBook["designation"];
+    bookDict["topic"] = currBook["subject"];
+    res.push(bookDict);
+  }
+  return res;
+}
+
+function loadBooks(rental = false) {
+  var xhr = new XMLHttpRequest();
+  var apiEndpoint = "/api/book/";
+
+  xhr.responseType = "json";
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      if (xhr.status == 200) {
+        var bookList = getBookList(xhr.response);
+        if (rental == true) {
+          loadRentalList(bookList);
+        } else {
+          displayBooks(bookList);
+        }
+      }
+      if (xhr.status == 403) {
+        window.location.href = "/login";
+      }
     }
-    return res;
+  };
+
+  xhr.open("GET", apiEndpoint);
+  //xhr.setRequestHeader("Authorization", "Token " + token)
+  xhr.setRequestHeader("X-CSRFToken", token);
+  xhr.send();
 }
 
-function loadBooks(rental=false){
-    var xhr = new XMLHttpRequest();
-    var apiEndpoint = "http://localhost:8000/api/book/";
+function displayBooks(fetchedBooks, rental = false) {
+  $("#bookContainer").empty();
 
-    xhr.responseType = "json";
-    xhr.onreadystatechange = () => {
-        if(xhr.readyState === XMLHttpRequest.DONE){
-            if(xhr.status == 200){
-                var bookList = getBookList(xhr.response);
-                if(rental == true){
-                    loadRentalList(bookList);
-                } else {
-                    displayBooks(bookList);
-                }
-            }
-            if(xhr.status == 403){
-                window.location.href = "http://localhost:8000/login";
-            }
-        }
-    };
+  var row = 0;
+  var count = 0;
+  while (count < fetchedBooks.length) {
+    const screensize = $("#bookContainer").width();
+    var booksPerRow = 3;
+    if (screensize >= 1000) {
+      booksPerRow = 6;
+    }
 
-    xhr.open("GET", apiEndpoint);
-    //xhr.setRequestHeader("Authorization", "Token " + token)
-    xhr.setRequestHeader("X-CSRFToken", token)
-    xhr.send();
-}
+    //Decide wether to make a new row
+    if (count % booksPerRow == 0) {
+      row = Math.floor(count / booksPerRow);
+      $("#bookContainer").append(
+        '<div class="row" id="bookRow' + row + '"></div>'
+      );
+    }
 
-function displayBooks(fetchedBooks, rental=false){
-    $('#bookContainer').empty()
-
-    var row = 0;
-    var count = 0
-    while(count<fetchedBooks.length){
-        const screensize = $("#bookContainer").width();
-        var booksPerRow = 3;
-        if (screensize >= 1000){
-            booksPerRow = 6;
-        }
-
-        //Decide wether to make a new row
-        if((count) % booksPerRow == 0){
-            row = Math.floor((count) / booksPerRow);
-            $('#bookContainer').append('<div class="row" id="bookRow' + row + '"></div>');
-        }
-
-        let bookString = makeBookCard(fetchedBooks[count], rental);
-        if(count == fetchedBooks.length - 1 && rental == false){
-            bookString += `
+    let bookString = makeBookCard(fetchedBooks[count], rental);
+    if (count == fetchedBooks.length - 1 && rental == false) {
+      bookString += `
             <script>
                 function rentBook(id){
-                    const rentalData = {
-                        "book": id,
-                        "user": user.id,
-                        "from_date": $("#dateFrom" + id).val(),
-                        "to_date": $("#dateTo" + id).val(),
+                    if(!$("#dateTo" + id).val() && $("#dateFrom" + id).val()){
+                        M.toast({html: '<p class="card-text">Please specify a duration</p>'})
+                        return
                     }
-                
-                    var xhr = new XMLHttpRequest();
-                    var url = "http://localhost:8000/api/loan/";
-                
-                    xhr.responseType = "json";
-                    xhr.onreadystatechange = () => {
-                        if (xhr.readyState === XMLHttpRequest.DONE){
-                            if (xhr.status == 201){
-                                M.toast({html: '<p class="flow-text">new rental registered</p>'})
-                                console.log('new rental registered!')
-                            } else if (xhr.status == 400){
-                                M.toast({html: '<p class="flow-text">Book is not available right now</p>'})
+
+                    const rentalData = {
+                        "book_copy": null,
+                        "duration": null,
+                    }
+                    fetch("/api/book/" + id + "/copies", { method: "GET", headers: { "X-CSRFToken": token, "Content-Type": "application/json" } }).then((res) => {
+                        res.json().then((json) => {
+                            let c = 0;
+                            while(c < json.length && !rentalData["book_copy"]){
+                                if(json[c].available){
+                                    rentalData["book_copy"] = json[c].id
+                                }
+                                if (c == json.length -1 && !rentalData["book_copy"]){
+                                    M.toast({html: '<p class="card-text">Book is not available right now</p>'})
+                                    return
+                                } 
+                                c += 1;
                             }
-                        };
-                    };
-                
-                    xhr.open("POST", url);
-                    xhr.setRequestHeader("X-CSRFToken", token);
-                    xhr.setRequestHeader("Content-Type", "application/json");
-                    xhr.send(JSON.stringify(rentalData));
+                            const from = new Date($("#dateFrom" + id).val());
+                            const to = new Date($("#dateTo" + id).val())
+                            rentalData["duration"] = Math.round((to - from) / 100000000);
+                            if (rentalData["duration"] > 10){
+                                M.toast({html: '<p class="card-text">The maximum duration is 10 days</p>'})
+                                return;
+                            };
+
+                            var xhr = new XMLHttpRequest();
+                            var url = "/api/loan/reserved/";
+                        
+                            xhr.responseType = "json";
+                            xhr.onreadystatechange = () => {
+                                if (xhr.readyState === XMLHttpRequest.DONE){
+                                    if (xhr.status == 201){
+                                        M.toast({html: '<p class="card-text">new rental registered!</p>'})
+                                        console.log('new rental registered!')
+                                    } else if (xhr.status !== 200){
+                                        M.toast({html: '<p class="card-text">Something went wrong while registering your loan!</p>'})
+                                    }
+                                };
+                            };
+                        
+                            xhr.open("POST", url);
+                            xhr.setRequestHeader("X-CSRFToken", token);
+                            xhr.setRequestHeader("Content-Type", "application/json");
+                            xhr.send(JSON.stringify(rentalData));
+                        });
+                    });
                 }
-                function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, bookedFrom, bookedTo, booked, rental){
+                function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, duration, book_copy, booked, rental){
                     if ($("#" + bookId).text() != ""){
                         $("#" + bookId).empty()
                     } else {
-                        if (rental){
-                            const extendedCardString =
-                            '<div class="card-content">' + 
-                                '<b>' + bookTitle + '</b>' +
-                            '</div>' +
-                            '<div class="card-action">' +
-                            '<p>Rented from: ' +
-                                '<b>' + bookedFrom + '</b>' +
-                            '</p>' +
-                            '<p>Rented to:' + bookedTo + '</p>' +
-                            '<a class="waves-effect waves-light btn-small" onclick="endLoan(' + booked + ')">End Loan</a>' +
-                            '</div>'
-                            $("#" + bookId).append(extendedCardString)
-                        }
-                        if (!rental){
-                            const extendedCardString = 
-                            '<div class="card-content">' +
-                                '<p class="flow-text"><b>' + bookTitle + '</b></p>' +
-                                '<p class="flow-text">' + bookIsbn + '</p>' +
-                                '<p class="flow-text">' + bookTopic + '</p>' +
-                                '<p class="flow-text">' + bookCategory + '</p>' +
-                            '</div>' +
-                            '<div class="card-action">' +
-                                '<p class="flow-text">From: <input type="date" min="2018-10-31" id="dateFrom' + bookId + '"/></p>' +
-                                '<p class="flow-text">To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"/></p>' +
-                                '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
-                            '</div>'
-                            $("#" + bookId).append(extendedCardString)
-                        }
+                        const extendedCardString = 
+                        '<div class="card-content">' +
+                            '<p class="card-text"><b>' + bookTitle + '</b></p>' +
+                            '<p class="card-text">' + bookIsbn + '</p>' +
+                            '<p class="card-text">' + bookTopic + '</p>' +
+                            '<p class="card-text">' + bookCategory + '</p>' +
+                        '</div>' +
+                        '<div class="card-action">' +
+                            '<p class="card-text">From: <input type="date" min="2018-10-31" id="dateFrom' + bookId + '"/></p>' +
+                            '<p class="card-text">To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"/></p>' +
+                            '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
+                        '</div>'
+                        $("#" + bookId).append(extendedCardString)
                     } 
                     
                     return
                 }
             </script>
-            `
-        } else if(count == fetchedBooks.length - 1 && rental == true){
-            bookString += `
+            `;
+    } else if (count == fetchedBooks.length - 1 && rental == true) {
+      bookString += `
             <script>
                 function endLoan(id){
                     var xhr = new XMLHttpRequest();
-                    var url = "http://localhost:8000/api/loan/" + id;
+                    var url = "/api/loan/reserved/" + id;
                 
                     xhr.responseType = "json";
                     xhr.onreadystatechange = () => {
                         if (xhr.readyState === XMLHttpRequest.DONE){
-                            if (xhr.status == 200){
+                            if (xhr.status == 200 || xhr.status == 204){
                                 M.toast({html: 'You successfully ended your loan!'})
+                            } else {
+                                M.toast({html: 'There was a problem ending your loan!'})
                             }
                         };
                     };
@@ -397,7 +319,7 @@ function displayBooks(fetchedBooks, rental=false){
                     xhr.setRequestHeader("X-CSRFToken", token);
                     xhr.send();
                 }
-                function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, bookedFrom, bookedTo, booked, rental){
+                function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, duration, book_copy, booked, rental){
                     if ($("#" + bookId).text() != ""){
                         $("#" + bookId).empty()
                     } else {
@@ -407,73 +329,60 @@ function displayBooks(fetchedBooks, rental=false){
                                 '<b>' + bookTitle + '</b>' +
                             '</div>' +
                             '<div class="card-action">' +
-                            '<p>Rented from: ' +
-                                '<b>' + bookedFrom + '</b>' +
+                            '<p>Days left: ' +
+                                '<b>' + duration + '</b>' +
                             '</p>' +
-                            '<p>Rented to: ' + bookedTo + '</p>' +
                             '<a class="waves-effect waves-light btn-small" onclick="endLoan(' + booked + ')">End Loan</a>' +
                             '</div>'
                             $("#" + bookId).append(extendedCardString)
                         }
-                        if (!rental){
-                            const extendedCardString = 
-                            '<div class="card-content">' +
-                                '<p class="flow-text"><b>' + bookTitle + '</b></p>' +
-                                '<p class="flow-text">' + bookIsbn + '</p>' +
-                                '<p class="flow-text">' + bookTopic + '</p>' +
-                                '<p class="flow-text">' + bookCategory + '</p>' +
-                            '</div>' +
-                            '<div class="card-action">' +
-                                '<p class="flow-text">From: <input type="date" min="2018-10-31" id="dateFrom$' + bookId + '"/></p>' +
-                                '<p class="flow-text">To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"/></p>' +
-                                '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
-                            '</div>'
-                            $("#" + bookId).append(extendedCardString)
-                        } 
                     }
                     
                     return
                 }
             </script>
-            `
-        }
-        $('#bookRow' + row).append(bookString);
-        count += 1;
-    };
+            `;
+    }
+    $("#bookRow" + row).append(bookString);
+    count += 1;
+  }
 }
 
-function renderBookCovers(bookId){
-    var xhr = new XMLHttpRequest();
-    var url = "http://localhost:8000/api/book/cover/" + bookId;
+function renderBookCovers(bookId) {
+  var xhr = new XMLHttpRequest();
+  var url = "/api/book/cover/" + bookId;
 
-    xhr.responseType = "jpeg";
-    xhr.onreadystatechange = () => {
-        if(xhr.readyState === XMLHttpRequest.DONE){
-            if(xhr.status == 200){
-                $("#" + bookId).attr("src", xhr.response);
-            }
-        }
-    };
+  xhr.responseType = "jpeg";
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      if (xhr.status == 200) {
+        $("#" + bookId).attr("src", xhr.response);
+      }
+    }
+  };
 
-    xhr.open("GET", url);
-    xhr.setRequestHeader("X-CSRFToken", token)
-    xhr.send();
+  xhr.open("GET", url);
+  xhr.setRequestHeader("X-CSRFToken", token);
+  xhr.send();
 }
 
-function makeBookCard(book, rental=false){
-    var bookCardString = `
+function makeBookCard(book, rental = false) {
+  var bookCardString =
+    `
     <div class="container col s4 m4 l4 xl2">
         <div class="card">` +
-            (rental ? `<div class="card-image" onClick="expandCard(${book.id}, '${book.title}', '${book.isbn}', '${book.topic}', '${book.category}', '${book.from_date}', '${book.to_date}', ${book.loan_id}, ${rental})">` : `<div class="card-image" onClick="expandCard(${book.id}, '${book.title}', '${book.isbn}', '${book.topic}', '${book.category}', undefined, undefined, undefined, ${rental})">`) +
-            `<img src="${book.cover}">
+    (rental
+      ? `<div class="card-image" onClick="expandCard(${book.id}, '${book.title.replace("'", "")}', '${book.isbn}', '${book.topic}', '${book.category}', '${book.duration}', '${book.book_copy}', ${book.loan_id}, ${rental})">`
+      : `<div class="card-image" onClick="expandCard(${book.id}, '${book.title.replace("'", "")}', '${book.isbn}', '${book.topic}', '${book.category}', undefined, undefined, undefined, ${rental})">`) +
+    `<img src="${book.cover}">
             <span class="card-title"></span>
             </div>
             <div id="${book.id}"></div>
         </div>
     </div>
     `;
-    
-    return bookCardString;
+
+  return bookCardString;
 }
 
 /***
@@ -486,34 +395,36 @@ function makeBookCard(book, rental=false){
  *    LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  */
 
-function loadRentalList(bookList){
-    var xhr = new XMLHttpRequest();
-    var url = "http://localhost:8000/api/loanOwn";
+function loadRentalList(bookList) {
+  var xhr = new XMLHttpRequest();
+  var url = "/api/loan/reserved";
 
-    xhr.responseType = "json";
-    xhr.onreadystatechange = () => {
-        if (xhr.readyState === XMLHttpRequest.DONE){
-            makeRentalList(bookList, xhr.response);
-        };
-    };
+  xhr.responseType = "json";
+  xhr.onreadystatechange = () => {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      makeRentalList(bookList, xhr.response);
+    }
+  };
 
-    xhr.open("GET", url);
-    xhr.send();
+  xhr.open("GET", url);
+  xhr.send();
 }
 
-function makeRentalList(fetchedRentals, loans){
-    var res = [];
-    for (var i = 0; i < loans.length; i++){
-        for(var j = 0; j < fetchedRentals.length; j++){
-            if (fetchedRentals[j]["id"] == loans[i]["book"]){
-                fetchedRentals[j]["loan_id"] = loans[i]["id"]
-                fetchedRentals[j]["from_date"] = loans[i]["from_date"]
-                fetchedRentals[j]["to_date"] = loans[i]["to_date"]
-                res.push(fetchedRentals[j]);
-            }
-        }
+function makeRentalList(books, loans) {
+  var res = [];
+  for (var i = 0; i < loans.length; i++) {
+    for (var j = 0; j < books.length; j++) {
+      if (books[j]["id"] == loans[i]["id"]) {
+        books[j]["loan_id"] = loans[i]["id"];
+        books[j]["book_copy"] = loans[i]["book_copy"];
+        books[j]["duration"] = loans[i]["duration"];
+        res.push(books[j]);
+        continue;
+      }
     }
-    displayBooks(res, true);
+  }
+  console.log(res);
+  displayBooks(res, true);
 }
 
 /***
@@ -526,22 +437,22 @@ function makeRentalList(fetchedRentals, loans){
  *    LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  */
 
-$('#feedButton').click(function(){
-    wipePage();
-    loadBooks();
-    initializeSearch();
-    loadBooksBool = true;
-    $('#myAccount').removeClass('disabled');
-})
+$("#feedButton").click(function() {
+  wipePage();
+  loadBooks();
+  initializeSearch();
+  loadBooksBool = true;
+  $("#myAccount").removeClass("disabled");
+});
 
-function wipePage(){
-    $('#bookContainer').empty();
-    $('#newBookContainer').empty();
-    $('#newBookContainer').removeClass('z-depth-4')
-    $('#logoutContainer').empty();
-    $('#logoutContainer').addClass('z-depth-4')
-    $('#searchBarContainer').empty();
-    $('#searchBarContainer').addClass('z-depth-1')
-    $('#rentalContainer').empty();
-    $('#rentalContainer').removeClass('z-depth-4')
+function wipePage() {
+  $("#bookContainer").empty();
+  $("#newBookContainer").empty();
+  $("#newBookContainer").removeClass("z-depth-4");
+  $("#logoutContainer").empty();
+  $("#logoutContainer").addClass("z-depth-4");
+  $("#searchBarContainer").empty();
+  $("#searchBarContainer").addClass("z-depth-1");
+  $("#rentalContainer").empty();
+  $("#rentalContainer").removeClass("z-depth-4");
 }
