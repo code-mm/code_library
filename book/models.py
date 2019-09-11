@@ -38,3 +38,7 @@ class Loan(models.Model):
     to_date = models.DateField()
     loan_start_information = models.BooleanField(default=False)
     loan_end_information = models.BooleanField(default=False)
+
+class LoanHistory(Loan):
+    class Meta:
+        proxy = True
