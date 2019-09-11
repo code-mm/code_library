@@ -91,8 +91,18 @@ class LoanReserved(APIView):
             return Response({'Error': 'Maximum loans reached'}, status=status.HTTP_400_BAD_REQUEST)
         if loan_serialized.is_valid():
             # check if duration exceeds maximum loan duration
-            if request.data['duration'] > MAX_LOAN_DURATION:
+            if loan_serialized.validated_data['duration'] > MAX_LOAN_DURATION:
                 return Response({'Error': 'Maximum loan duration exceeded'}, status=status.HTTP_400_BAD_REQUEST)
+            # check if the user already has a copy of the same book on reserved book list or lent list
+            try:
+                book_id = models.BookCopies.objects.select_related('book').get(pk=loan_serialized.validated_data['book_copy'].id).book.id
+            except models.BookCopies.DoesNotExist:
+                return Response({'Error': 'Invalid book_copy value'}, status=status.HTTP_400_BAD_REQUEST)
+            if models.LoanReserved.objects.select_related('book_copy').filter(user=request.user.id).filter(book_copy__book__id=book_id).count() > 0:
+                return Response({'Error': 'Book already on reserved book list'}, status=status.HTTP_400_BAD_REQUEST)
+            elif models.Loan.objects.select_related('book_copy').filter(user=request.user.id).filter(user=request.user.id).filter(book_copy__book__id=book_id).count() > 0:
+                return Response({'Error': 'Book already lent'}, status=status.HTTP_400_BAD_REQUEST)
+
             loan_serialized.save()
             return Response({'Success': 'Loan reservation created'}, status=status.HTTP_201_CREATED)
         else:
