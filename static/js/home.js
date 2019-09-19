@@ -3,7 +3,7 @@ $("document").ready(function() {
   loadBooks();
   showUser(token, false);
   initializeSearch();
-  if (token != undefined && loadBooksBool == true) {
+  if (token != undefined) {
     showUser(token, false);
     loadBooks();
   }
@@ -80,14 +80,13 @@ function renderUser(user) {
         </script>
         `;
   $("#logoutContainer").append(logoutString);
-  $("#logoutContainer").addClass("z-depth-4");
+  $("#logoutContainer").addClass("z-depth-2");
 }
 
 $("#myAccount").click(function() {
   showUser();
   loadBooks(true);
 
-  loadBooksBool = false;
   $("#bookContainer").empty();
   $("#newBookContainer").empty();
   $("#searchBarContainer").empty();
@@ -130,7 +129,7 @@ function searchBooks(query) {
       if (xhr.status == 200) {
         loadBooksBool = false;
         $("bookContainer").empty();
-        displayBooks(xhr.response);
+        displayBooks(getBookList(xhr.response));
       }
     }
   };
@@ -199,6 +198,10 @@ function loadBooks(rental = false) {
 
 function displayBooks(fetchedBooks, rental = false) {
   $("#bookContainer").empty();
+
+  if(rental === true){
+    $("#bookContainer").append("<h5>Books that you reserved</h5>");
+  }
 
   var row = 0;
   var count = 0;
@@ -372,8 +375,20 @@ function makeBookCard(book, rental = false) {
     <div class="container col s4 m4 l4 xl2">
         <div class="card">` +
     (rental
-      ? `<div class="card-image" onClick="expandCard(${book.id}, '${book.title.replace("'", "")}', '${book.isbn}', '${book.topic}', '${book.category}', '${book.duration}', '${book.book_copy}', ${book.loan_id}, ${rental})">`
-      : `<div class="card-image" onClick="expandCard(${book.id}, '${book.title.replace("'", "")}', '${book.isbn}', '${book.topic}', '${book.category}', undefined, undefined, undefined, ${rental})">`) +
+      ? `<div class="card-image" onClick="expandCard(${
+          book.id
+        }, '${book.title.replace("'", "")}', '${book.isbn}', '${
+          book.topic
+        }', '${book.category}', '${book.duration}', '${book.book_copy}', ${
+          book.loan_id
+        }, ${rental})">`
+      : `<div class="card-image" onClick="expandCard(${
+          book.id
+        }, '${book.title.replace("'", "")}', '${book.isbn}', '${
+          book.topic
+        }', '${
+          book.category
+        }', undefined, undefined, undefined, ${rental})">`) +
     `<img src="${book.cover}">
             <span class="card-title"></span>
             </div>
@@ -396,18 +411,91 @@ function makeBookCard(book, rental = false) {
  */
 
 function loadRentalList(bookList) {
-  var xhr = new XMLHttpRequest();
   var url = "/api/loan/reserved";
+  fetch(url, { method: "GET" }).then(res => {
+    res.json().then(json => {
+      displayBooks(makeRentalList(bookList, json), true);
+      url = url.replace("reserved", "active");
+      fetch(url, { method: "GET" }).then(res => {
+        res.json().then(json => {
+          if(json.length > 0){
+            $("#bookContainer").append("<h5>Active Loans</h5>");
+            appendActiveRentals(makeRentalList(bookList, json));
+          }
+        });
+      });
+    });
+  });
+}
 
-  xhr.responseType = "json";
-  xhr.onreadystatechange = () => {
-    if (xhr.readyState === XMLHttpRequest.DONE) {
-      makeRentalList(bookList, xhr.response);
+function appendActiveRentals(rentals) {
+  var row = 0;
+  var count = 0;
+  while (count < rentals.length) {
+    const screensize = $("#bookContainer").width();
+    var booksPerRow = 3;
+    if (screensize >= 1000) {
+      booksPerRow = 6;
     }
-  };
 
-  xhr.open("GET", url);
-  xhr.send();
+    //Decide wether to make a new row
+    if (count % booksPerRow == 0) {
+      row = Math.floor(count / booksPerRow);
+      $("#bookContainer").append(
+        '<div class="row" id="bookRow' + row + '"></div>'
+      );
+    }
+
+    let bookString = makeBookCard(rentals[count], rental);
+    if (count == rentals.length - 1) {
+      bookString += `
+      <script>
+          function endLoan(id){
+              var xhr = new XMLHttpRequest();
+              var url = "/api/loan/active/" + id;
+          
+              xhr.responseType = "json";
+              xhr.onreadystatechange = () => {
+                  if (xhr.readyState === XMLHttpRequest.DONE){
+                      if (xhr.status == 200 || xhr.status == 204){
+                          M.toast({html: 'You successfully ended your loan!'})
+                      } else {
+                          M.toast({html: 'There was a problem ending your loan!'})
+                      }
+                  };
+              };
+          
+              xhr.open("DELETE", url);
+              xhr.setRequestHeader("X-CSRFToken", token);
+              xhr.send();
+          }
+          function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, duration, book_copy, booked, rental){
+              if ($("#" + bookId).text() != ""){
+                  $("#" + bookId).empty()
+              } else {
+                  if (rental){
+                      const extendedCardString =
+                      '<div class="card-content">' + 
+                          '<b>' + bookTitle + '</b>' +
+                      '</div>' +
+                      '<div class="card-action">' +
+                      '<p>Days left: ' +
+                          '<b>' + duration + '</b>' +
+                      '</p>' +
+                      '<a class="waves-effect waves-light btn-small" onclick="endLoan(' + booked + ')">End Loan</a>' +
+                      '</div>'
+                      $("#" + bookId).append(extendedCardString)
+                  }
+              }
+              
+              return
+          }
+      </script>
+      `;
+    $("#bookRow" + row).append(bookString);
+    count += 1;
+    }
+  }
 }
 
 function makeRentalList(books, loans) {
@@ -423,8 +511,7 @@ function makeRentalList(books, loans) {
       }
     }
   }
-  console.log(res);
-  displayBooks(res, true);
+  return res;
 }
 
 /***
@@ -441,7 +528,6 @@ $("#feedButton").click(function() {
   wipePage();
   loadBooks();
   initializeSearch();
-  loadBooksBool = true;
   $("#myAccount").removeClass("disabled");
 });
 

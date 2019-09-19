@@ -50,12 +50,10 @@
                 if (parts.length == 2) return parts.pop().split(";").shift();
             }
             token = getCookie("csrftoken")
-            console.log(token)
             if (token == undefined) {
                 window.location = "http://localhost:8000/login";
             }
             var user = {};
-            var loadBooksBool = true;
             M.AutoInit();
         </script>
     </body>
