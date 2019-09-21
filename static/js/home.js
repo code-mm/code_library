@@ -199,7 +199,7 @@ function loadBooks(rental = false) {
 function displayBooks(fetchedBooks, rental = false) {
   $("#bookContainer").empty();
 
-  if(rental === true){
+  if (rental === true) {
     $("#bookContainer").append("<h5>Books that you reserved</h5>");
   }
 
@@ -247,9 +247,8 @@ function displayBooks(fetchedBooks, rental = false) {
                                 } 
                                 c += 1;
                             }
-                            const from = new Date($("#dateFrom" + id).val());
-                            const to = new Date($("#dateTo" + id).val())
-                            rentalData["duration"] = Math.round((to - from) / 100000000);
+                            const duration = $("#duration" + id).val();
+                            rentalData["duration"] = duration;
                             if (rentalData["duration"] > 10){
                                 M.toast({html: '<p class="card-text">The maximum duration is 10 days</p>'})
                                 return;
@@ -289,8 +288,7 @@ function displayBooks(fetchedBooks, rental = false) {
                             '<p class="card-text">' + bookCategory + '</p>' +
                         '</div>' +
                         '<div class="card-action">' +
-                            '<p class="card-text">From: <input type="date" min="2018-10-31" id="dateFrom' + bookId + '"/></p>' +
-                            '<p class="card-text">To: <input type="date" min="2018-10-31" id="dateTo' + bookId + '"/></p>' +
+                            '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
                             '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
                         '</div>'
                         $("#" + bookId).append(extendedCardString)
@@ -335,7 +333,7 @@ function displayBooks(fetchedBooks, rental = false) {
                             '<p>Days left: ' +
                                 '<b>' + duration + '</b>' +
                             '</p>' +
-                            '<a class="waves-effect waves-light btn-small" onclick="endLoan(' + booked + ')">End Loan</a>' +
+                            '<a class="waves-effect waves-light btn-small" onclick="endLoan(' + booked + ')">End Rental</a>' +
                             '</div>'
                             $("#" + bookId).append(extendedCardString)
                         }
@@ -418,7 +416,7 @@ function loadRentalList(bookList) {
       url = url.replace("reserved", "active");
       fetch(url, { method: "GET" }).then(res => {
         res.json().then(json => {
-          if(json.length > 0){
+          if (json.length > 0) {
             $("#bookContainer").append("<h5>Active Loans</h5>");
             appendActiveRentals(makeRentalList(bookList, json));
           }
@@ -492,8 +490,8 @@ function appendActiveRentals(rentals) {
           }
       </script>
       `;
-    $("#bookRow" + row).append(bookString);
-    count += 1;
+      $("#bookRow" + row).append(bookString);
+      count += 1;
     }
   }
 }
