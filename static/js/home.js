@@ -53,8 +53,8 @@ function renderUser(user) {
         <div class="col s10 offset-s1">
             <div class="row">
                 <p class="card-text">You are currently logged in as: ${
-                  user["first_name"]
-                } ${user["last_name"]}!</p>
+                  user["username"]
+                }!</p>
                 <a class="waves-effect waves-light btn-large" onclick="logout()">Logout</a>
             </div>
         </div>
@@ -224,77 +224,78 @@ function displayBooks(fetchedBooks, rental = false) {
     if (count == fetchedBooks.length - 1 && rental == false) {
       bookString += `
             <script>
-                function rentBook(id){
-                    if(!$("#dateTo" + id).val() && $("#dateFrom" + id).val()){
-                        M.toast({html: '<p class="card-text">Please specify a duration</p>'})
-                        return
-                    }
-
-                    const rentalData = {
-                        "book_copy": null,
-                        "duration": null,
-                    }
-                    fetch("/api/book/" + id + "/copies", { method: "GET", headers: { "X-CSRFToken": token, "Content-Type": "application/json" } }).then((res) => {
-                        res.json().then((json) => {
-                            let c = 0;
-                            while(c < json.length && !rentalData["book_copy"]){
-                                if(json[c].available){
-                                    rentalData["book_copy"] = json[c].id
-                                }
-                                if (c == json.length -1 && !rentalData["book_copy"]){
-                                    M.toast({html: '<p class="card-text">Book is not available right now</p>'})
-                                    return
-                                } 
-                                c += 1;
-                            }
-                            const duration = $("#duration" + id).val();
-                            rentalData["duration"] = duration;
-                            if (rentalData["duration"] > 10){
-                                M.toast({html: '<p class="card-text">The maximum duration is 10 days</p>'})
-                                return;
-                            };
-
-                            var xhr = new XMLHttpRequest();
-                            var url = "/api/loan/reserved/";
-                        
-                            xhr.responseType = "json";
-                            xhr.onreadystatechange = () => {
-                                if (xhr.readyState === XMLHttpRequest.DONE){
-                                    if (xhr.status == 201){
-                                        M.toast({html: '<p class="card-text">new rental registered!</p>'})
-                                        console.log('new rental registered!')
-                                    } else if (xhr.status !== 200){
-                                        M.toast({html: '<p class="card-text">Something went wrong while registering your loan!</p>'})
-                                    }
-                                };
-                            };
-                        
-                            xhr.open("POST", url);
-                            xhr.setRequestHeader("X-CSRFToken", token);
-                            xhr.setRequestHeader("Content-Type", "application/json");
-                            xhr.send(JSON.stringify(rentalData));
-                        });
-                    });
+                function rentBook(bookId, copy_id){
+                  const duration = $("#duration" + bookId).val();
+                  const rentalData = {
+                      "book_copy": copy_id,
+                      "duration": duration,
+                  }
+                  var xhr = new XMLHttpRequest();
+                  var url = "/api/loan/reserved/";
+              
+                  xhr.responseType = "json";
+                  xhr.onreadystatechange = () => {
+                      if (xhr.readyState === XMLHttpRequest.DONE){
+                          if (xhr.status == 201){
+                              M.toast({html: '<p class="card-text">new rental registered!</p>'})
+                              console.log('new rental registered!')
+                          } else if (xhr.status !== 200){
+                              M.toast({html: '<p class="card-text">Something went wrong while registering your loan!</p>'})
+                          }
+                      };
+                  };
+              
+                  xhr.open("POST", url);
+                  xhr.setRequestHeader("X-CSRFToken", token);
+                  xhr.setRequestHeader("Content-Type", "application/json");
+                  xhr.send(JSON.stringify(rentalData));
                 }
+
                 function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, duration, book_copy, booked, rental){
-                    if ($("#" + bookId).text() != ""){
-                        $("#" + bookId).empty()
-                    } else {
-                        const extendedCardString = 
-                        '<div class="card-content">' +
-                            '<p class="card-text"><b>' + bookTitle + '</b></p>' +
-                            '<p class="card-text">' + bookIsbn + '</p>' +
-                            '<p class="card-text">' + bookTopic + '</p>' +
-                            '<p class="card-text">' + bookCategory + '</p>' +
-                        '</div>' +
-                        '<div class="card-action">' +
-                            '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
-                            '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ')">Rent this book</a>' +
-                        '</div>'
-                        $("#" + bookId).append(extendedCardString)
-                    } 
-                    
-                    return
+                  fetch("/api/book/" + bookId + "/copies", { method: "GET", headers: { "X-CSRFToken": token, "Content-Type": "application/json" } }).then((res) => {
+                    res.json().then((json) => {
+                      let c = 0;
+                      let copy_id = undefined;
+                      while(c < json.length && !copy_id){
+                          console.log(json[c]);
+                          if(json[c].available && !copy_id){
+                              copy_id = json[c].id
+                          }
+                          if (c == json.length -1 && !copy_id){
+                              M.toast({html: '<p class="card-text">Book is not available right now</p>'})
+                              return
+                          } 
+                          c += 1;
+                      }  
+
+                      if ($("#" + bookId).text() != ""){
+                          $("#" + bookId).empty()
+                      } else {
+                          let extendedCardString = 
+                          '<div class="card-content">' +
+                              '<p class="card-text"><b>' + bookTitle + '</b></p>' +
+                              '<p class="card-text">' + bookIsbn + '</p>' +
+                              '<p class="card-text">' + bookTopic + '</p>' +
+                              '<p class="card-text">' + bookCategory + '</p>'
+                          
+                          if (copy_id){
+                            extendedCardString += '<p class="card-text" style="color: green">available</p>' + 
+                            '</div>'
+                          } else {
+                            extendedCardString += '<p class="card-text" style="color: red">not available right now</p>' + 
+                            '</div>'
+                          }
+
+                          extendedCardString +=
+                          '<div class="card-action">' +
+                              '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
+                              '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ', ' + copy_id  + ')">Rent this book</a>' +
+                          '</div>'
+                          $("#" + bookId).append(extendedCardString)
+                      } 
+                      return
+                    });
+                  });
                 }
             </script>
             `;
@@ -497,10 +498,11 @@ function appendActiveRentals(rentals) {
 }
 
 function makeRentalList(books, loans) {
+  console.log(books);
   var res = [];
   for (var i = 0; i < loans.length; i++) {
     for (var j = 0; j < books.length; j++) {
-      if (books[j]["id"] == loans[i]["id"]) {
+      if (books[j]["id"] == loans[i]["book_id"]) {
         books[j]["loan_id"] = loans[i]["id"];
         books[j]["book_copy"] = loans[i]["book_copy"];
         books[j]["duration"] = loans[i]["duration"];
