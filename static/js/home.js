@@ -1,13 +1,18 @@
 $("document").ready(function() {
   $(".sidenav").sidenav();
-  loadBooks();
   showUser(token, false);
   initializeSearch();
   if (token != undefined) {
     showUser(token, false);
-    loadBooks();
+    loadBooks(false, 20);
   }
 });
+
+window.onscroll = function(ev) {
+  if ((window.innerHeight + window.scrollY + 100) >= document.body.offsetHeight) {
+      loadBooks(false, 10);
+  }
+};
 
 /***
  *    ██╗LLL██╗███████╗███████╗██████╗L██████╗L██╗███████╗██████╗L██╗LLLLLL█████╗L██╗LLL██╗
@@ -127,7 +132,6 @@ function searchBooks(query) {
   xhr.onreadystatechange = () => {
     if (xhr.readyState === XMLHttpRequest.DONE) {
       if (xhr.status == 200) {
-        loadBooksBool = false;
         $("bookContainer").empty();
         displayBooks(getBookList(xhr.response));
       }
@@ -169,7 +173,7 @@ function getBookList(response) {
   return res;
 }
 
-function loadBooks(rental = false) {
+function loadBooks(rental = false, amount = null) {
   var xhr = new XMLHttpRequest();
   var apiEndpoint = "/api/book/";
 
@@ -181,7 +185,7 @@ function loadBooks(rental = false) {
         if (rental == true) {
           loadRentalList(bookList);
         } else {
-          displayBooks(bookList);
+          displayBooks(bookList, false, amount);
         }
       }
       if (xhr.status == 403) {
@@ -196,16 +200,28 @@ function loadBooks(rental = false) {
   xhr.send();
 }
 
-function displayBooks(fetchedBooks, rental = false) {
-  $("#bookContainer").empty();
+function displayBooks(fetchedBooks, rental = false, amount) {
+  if(booksLoaded == 0){
+    $("#bookContainer").empty();
+  }
 
   if (rental === true) {
     $("#bookContainer").append("<h5>Books that you reserved</h5>");
   }
 
-  var row = 0;
-  var count = 0;
-  while (count < fetchedBooks.length) {
+  let displayCount;
+  let count;
+  if(amount){
+    displayCount = booksLoaded + amount;
+    count = booksLoaded;
+    booksLoaded += amount;
+  } else {
+    displayCount = fetchedBooks.length
+    row = 0;
+    count = 0;
+  }
+
+  while (count < displayCount) {
     const screensize = $("#bookContainer").width();
     var booksPerRow = 3;
     if (screensize >= 1000) {
@@ -221,7 +237,7 @@ function displayBooks(fetchedBooks, rental = false) {
     }
 
     let bookString = makeBookCard(fetchedBooks[count], rental);
-    if (count == fetchedBooks.length - 1 && rental == false) {
+    if (count == displayCount - 1 && rental == false) {
       bookString += `
             <script>
                 function rentBook(bookId, copy_id){
@@ -299,7 +315,7 @@ function displayBooks(fetchedBooks, rental = false) {
                 }
             </script>
             `;
-    } else if (count == fetchedBooks.length - 1 && rental == true) {
+    } else if (count == displayCount - 1 && rental == true) {
       bookString += `
             <script>
                 function endLoan(id){
@@ -526,7 +542,8 @@ function makeRentalList(books, loans) {
 
 $("#feedButton").click(function() {
   wipePage();
-  loadBooks();
+  booksLoaded = 0;
+  loadBooks(false, 20);
   initializeSearch();
   $("#myAccount").removeClass("disabled");
 });
