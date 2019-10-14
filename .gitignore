@@ -1,5 +1,6 @@
 __pycache__
-book/settings_secret.py
+book/settings_development.py
+book/settings_production.py
 db.sqlite3
 .DS_Store
 .vscode
