@@ -51,7 +51,7 @@
             }
             token = getCookie("csrftoken")
             if (token == undefined) {
-                window.location = "http://localhost:8000/login";
+		    window.location = "{% url 'login' %}";
             }
             var user = {};
             var booksLoaded = 0;
