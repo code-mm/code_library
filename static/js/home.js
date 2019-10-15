@@ -268,7 +268,7 @@ function displayBooks(fetchedBooks, rental = false, amount) {
                 }
 
                 function expandCard(bookId, bookTitle, bookIsbn, bookTopic, bookCategory, duration, book_copy, booked, rental){
-                  fetch("/api/book/" + bookId + "/copies", { method: "GET", headers: { "X-CSRFToken": token, "Content-Type": "application/json" } }).then((res) => {
+                  fetch("/api/book/" + bookId + "/copies/", { method: "GET", headers: { "X-CSRFToken": token, "Content-Type": "application/json" } }).then((res) => {
                     res.json().then((json) => {
                       let c = 0;
                       let copy_id = undefined;
@@ -320,7 +320,7 @@ function displayBooks(fetchedBooks, rental = false, amount) {
             <script>
                 function endLoan(id){
                     var xhr = new XMLHttpRequest();
-                    var url = "/api/loan/reserved/" + id;
+                    var url = "/api/loan/reserved/" + id + "/";
                 
                     xhr.responseType = "json";
                     xhr.onreadystatechange = () => {
@@ -366,24 +366,6 @@ function displayBooks(fetchedBooks, rental = false, amount) {
   }
 }
 
-function renderBookCovers(bookId) {
-  var xhr = new XMLHttpRequest();
-  var url = "/api/book/cover/" + bookId;
-
-  xhr.responseType = "jpeg";
-  xhr.onreadystatechange = () => {
-    if (xhr.readyState === XMLHttpRequest.DONE) {
-      if (xhr.status == 200) {
-        $("#" + bookId).attr("src", xhr.response);
-      }
-    }
-  };
-
-  xhr.open("GET", url);
-  xhr.setRequestHeader("X-CSRFToken", token);
-  xhr.send();
-}
-
 function makeBookCard(book, rental = false) {
   var bookCardString =
     `
@@ -426,7 +408,7 @@ function makeBookCard(book, rental = false) {
  */
 
 function loadRentalList(bookList) {
-  var url = "/api/loan/reserved";
+  var url = "/api/loan/reserved/";
   fetch(url, { method: "GET" }).then(res => {
     res.json().then(json => {
       displayBooks(makeRentalList(bookList, json), true);
@@ -467,7 +449,7 @@ function appendActiveRentals(rentals) {
       <script>
           function endLoan(id){
               var xhr = new XMLHttpRequest();
-              var url = "/api/loan/active/" + id;
+              var url = "/api/loan/active/" + id + "/";
           
               xhr.responseType = "json";
               xhr.onreadystatechange = () => {
