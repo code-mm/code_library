@@ -123,20 +123,20 @@ class LoanActive(APIView):
     def get(self, request, loan_id=None, *args, **kwargs):
         if loan_id != None:
             try:
-                loan = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lt=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now())).get(pk=loan_id)
+                loan = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lte=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now())).get(pk=loan_id)
                 loan_serialized = serializers.Loan(loan)
                 return Response(loan_serialized.data, status=status.HTTP_200_OK)
             except models.Loan.DoesNotExist:
                 return Response({'Error': 'Loan does not exist'}, status=status.HTTP_404_NOT_FOUND)
         else:
-            loans = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lt=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now()))
+            loans = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lte=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now()))
             loans_serialized = serializers.Loan(loans, many=True)
             return Response(loans_serialized.data, status=status.HTTP_200_OK)
 
     def delete(self, request, loan_id=None, *args, **kwargs):
         if loan_id != None:
             try:
-                loan = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lt=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now())).get(pk=loan_id)
+                loan = models.Loan.objects.filter(user=self.request.user.id).filter(from_date__lte=datetime.date(datetime.now())).filter(to_date__gt=datetime.date(datetime.now())).get(pk=loan_id)
                 loan.delete()
                 return Response({'Success': 'Loan deleted'}, status=status.HTTP_204_NO_CONTENT)
             except models.Loan.DoesNotExist:
@@ -148,12 +148,13 @@ class LoanHistory(APIView):
     def get(self, request, loan_id=None, *args, **kwargs):
         if loan_id != None:
             try:
-                loan = models.Loan.objects.filter(user=self.request.user.id).filter(to_date__lt=datetime.date(datetime.now())).get(pk=loan_id)
+                loan = models.Loan.objects.filter(user=self.request.user.id).filter(to_date__lte=datetime.date(datetime.now())).get(pk=loan_id)
                 loan_serialized = serializers.Loan(loan)
                 return Response(loan_serialized.data, status=status.HTTP_200_OK)
             except models.Loan.DoesNotExist:
                 return Response({'Error': 'Loan does not exist'}, status=status.HTTP_404_NOT_FOUND)
         else:
-            loans = models.Loan.objects.filter(user=self.request.user.id).filter(to_date__lt=datetime.date(datetime.now()))
+            loans = models.Loan.objects.filter(user=self.request.user.id).filter(to_date__lte=datetime.date(datetime.now()))
             loans_serialized = serializers.Loan(loans, many=True)
             return Response(loans_serialized.data, status=status.HTTP_200_OK)
+
