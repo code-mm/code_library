@@ -271,22 +271,25 @@ function displayBooks(fetchedBooks, rental = false, amount) {
                   fetch("/api/book/" + bookId + "/copies/", { method: "GET", headers: { "X-CSRFToken": token, "Content-Type": "application/json" } }).then((res) => {
                     res.json().then((json) => {
                       let c = 0;
-                      let copy_id = undefined;
+                      let copy_id;
                       while(c < json.length && !copy_id){
-                          console.log(json[c]);
                           if(json[c].available && !copy_id){
                               copy_id = json[c].id
+                              console.log(json[c]);
                           }
-                          if (c == json.length -1 && !copy_id){
-                              M.toast({html: '<p class="card-text">Book is not available right now</p>'})
-                              return
-                          } 
                           c += 1;
                       }  
+
+                      if (copy_id === undefined){
+                        M.toast({html: '<p class="card-text">Book is not available right now</p>'});
+                        return
+                      } 
 
                       if ($("#" + bookId).text() != ""){
                           $("#" + bookId).empty()
                       } else {
+                          $("#" + expandedCard).empty()
+                          expandedCard = bookId;
                           let extendedCardString = 
                           '<div class="card-content">' +
                               '<p class="card-text"><b>' + bookTitle + '</b></p>' +
@@ -294,7 +297,7 @@ function displayBooks(fetchedBooks, rental = false, amount) {
                               '<p class="card-text">' + bookTopic + '</p>' +
                               '<p class="card-text">' + bookCategory + '</p>'
                           
-                          if (copy_id){
+                          if (copy_id !== undefined){
                             extendedCardString += '<p class="card-text" style="color: green">available</p>' + 
                             '</div>'
                           } else {
