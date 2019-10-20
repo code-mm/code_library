@@ -1,7 +1,12 @@
 __pycache__
 book/settings_development.py
 book/settings_production.py
+book/settings.py
 db.sqlite3
 .DS_Store
 .vscode
 bin/
+include/
+lib/
+lib64
+pyvenv.cfg
