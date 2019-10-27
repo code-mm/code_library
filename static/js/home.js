@@ -217,7 +217,13 @@ function displayBooks(fetchedBooks, rental = false, amount) {
   }
 
   if (rental === true) {
-    $("#reservedContainer").append("<h5>Books that you reserved</h5>");
+    $("#reservedContainer").append(
+      `<div id="captionContainer" style="display: flex; justify-content: space-between;"></div>`
+    );
+    $("#captionContainer").append("<h5>Books that you reserved</h5>");
+    $("#captionContainer").append(
+      `<a class="waves-effect btn-flat" onClick="$('#logoutContainer').empty(); $('#reservedContainer').empty(); $('#activeContainer').empty(); $('#myAccount').click()">Refresh</a>`
+    );
     $("#reservedContainer").css("display", "");
   }
 
@@ -448,7 +454,13 @@ function loadRentalList(bookList) {
       fetch(url, { method: "GET" }).then(res => {
         res.json().then(json => {
           if (json.length > 0) {
-            $("#activeContainer").append("<h5>Active Loans</h5>");
+            $("#activeContainer").append(
+              `<div id="activeCaptionContainer" style="display: flex; justify-content: space-between;"></div>`
+            );
+            $("#activeCaptionContainer").append("<h5>Active Loans</h5>");
+            $("#activeCaptionContainer").append(
+              `<a class="waves-effect btn-flat" onClick="$('#logoutContainer').empty(); $('#reservedContainer').empty(); $('#activeContainer').empty(); $('#myAccount').click()">Refresh</a>`
+            );
             appendActiveRentals(makeRentalList(bookList, json));
           }
         });
