@@ -9,8 +9,8 @@ $("document").ready(function() {
 });
 
 window.onscroll = function(ev) {
-  if ((window.innerHeight + window.scrollY + 100) >= document.body.offsetHeight) {
-      loadBooks(false, 10);
+  if (window.innerHeight + window.scrollY + 100 >= document.body.offsetHeight) {
+    loadBooks(false, 10);
   }
 };
 
@@ -201,7 +201,7 @@ function loadBooks(rental = false, amount = null) {
 }
 
 function displayBooks(fetchedBooks, rental = false, amount) {
-  if(booksLoaded == 0){
+  if (booksLoaded == 0) {
     $("#bookContainer").empty();
   }
 
@@ -211,12 +211,12 @@ function displayBooks(fetchedBooks, rental = false, amount) {
 
   let displayCount;
   let count;
-  if(amount){
+  if (amount) {
     displayCount = booksLoaded + amount;
     count = booksLoaded;
     booksLoaded += amount;
   } else {
-    displayCount = fetchedBooks.length
+    displayCount = fetchedBooks.length;
     row = 0;
     count = 0;
   }
@@ -278,12 +278,7 @@ function displayBooks(fetchedBooks, rental = false, amount) {
                               console.log(json[c]);
                           }
                           c += 1;
-                      }  
-
-                      if (copy_id === undefined){
-                        M.toast({html: '<p class="card-text">Book is not available right now</p>'});
-                        return
-                      } 
+                      }
 
                       if ($("#" + bookId).text() != ""){
                           $("#" + bookId).empty()
@@ -300,16 +295,22 @@ function displayBooks(fetchedBooks, rental = false, amount) {
                           if (copy_id !== undefined){
                             extendedCardString += '<p class="card-text" style="color: green">available</p>' + 
                             '</div>'
+                            extendedCardString +=
+                            '<div class="card-action">' +
+                                '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
+                                '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ', ' + copy_id  + ')">Rent this book</a>' +
+                            '</div>'
                           } else {
                             extendedCardString += '<p class="card-text" style="color: red">not available right now</p>' + 
                             '</div>'
+                            extendedCardString +=
+                            '<div class="card-action">' +
+                                '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
+                                '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ', ' + copy_id  + ')">Reserve this book</a>' +
+                            '</div>'
                           }
+                          
 
-                          extendedCardString +=
-                          '<div class="card-action">' +
-                              '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
-                              '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ', ' + copy_id  + ')">Rent this book</a>' +
-                          '</div>'
                           $("#" + bookId).append(extendedCardString)
                       } 
                       return
