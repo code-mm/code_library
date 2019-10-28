@@ -22,7 +22,7 @@
                 </div>
             </nav>
             <ul class="sidenav" id="mobile-demo">
-		    <li><a class="waves-effect btn-flat" id="myAccountM"><i style="color: #000; line-height: unset; width: unset">my account</i></a></li>
+		    <li><a class="waves-effect btn-flat" id="myAccount"><i style="color: #000; line-height: unset; width: unset">my account</i></a></li>
             </ul>
         </header>
         <main>
@@ -31,6 +31,8 @@
                 <div class="container" id="newBookContainer"></div>
                 <div class="container z-depth-1" id="searchBarContainer"></div>
                 <div class="container l10 m10 s10" id="bookContainer"></div>
+                <div class="container l10 m10 s10 z-depth-1" style="padding: 2em; margin-bottom: 1em; display: none;" id="reservedContainer"></div>
+                <div class="container l10 m10 s10 z-depth-1" style="padding: 2em; display: none;" id="activeContainer"></div>
             </div>
         </main>
         <footer>
@@ -57,6 +59,7 @@
             var booksLoaded = 0;
             var row = 0;
             var expandedCard = undefined;
+            var searched = undefined;
             M.AutoInit();
         </script>
     </body>

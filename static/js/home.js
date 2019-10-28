@@ -9,8 +9,13 @@ $("document").ready(function() {
 });
 
 window.onscroll = function(ev) {
-  if ((window.innerHeight + window.scrollY + 100) >= document.body.offsetHeight) {
+  if (!searched) {
+    if (
+      window.innerHeight + window.scrollY + 100 >=
+      document.body.offsetHeight
+    ) {
       loadBooks(false, 10);
+    }
   }
 };
 
@@ -120,7 +125,13 @@ function initializeSearch() {
   $("#searchBarContainer").addClass("z-depth-1");
 
   $("#search").on("input", function() {
-    searchBooks($("#search").val());
+    const query = $("#search").val();
+    if (query === "") {
+      searched = undefined;
+    } else {
+      searched = true;
+      searchBooks(query);
+    }
   });
 }
 
@@ -132,8 +143,8 @@ function searchBooks(query) {
   xhr.onreadystatechange = () => {
     if (xhr.readyState === XMLHttpRequest.DONE) {
       if (xhr.status == 200) {
-        $("bookContainer").empty();
-        displayBooks(getBookList(xhr.response));
+        booksLoaded = 0;
+        displayBooks(getBookList(xhr.response), false, 20);
       }
     }
   };
@@ -201,28 +212,40 @@ function loadBooks(rental = false, amount = null) {
 }
 
 function displayBooks(fetchedBooks, rental = false, amount) {
-  if(booksLoaded == 0){
+  if (booksLoaded === 0) {
     $("#bookContainer").empty();
   }
 
   if (rental === true) {
-    $("#bookContainer").append("<h5>Books that you reserved</h5>");
+    $("#reservedContainer").append(
+      `<div id="captionContainer" style="display: flex; justify-content: space-between;"></div>`
+    );
+    $("#captionContainer").append("<h5>Books that you reserved</h5>");
+    $("#captionContainer").append(
+      `<a class="waves-effect btn-flat" onClick="$('#logoutContainer').empty(); $('#reservedContainer').empty(); $('#activeContainer').empty(); $('#myAccount').click()">Refresh</a>`
+    );
+    $("#reservedContainer").css("display", "");
   }
 
   let displayCount;
   let count;
-  if(amount){
+  if (amount) {
     displayCount = booksLoaded + amount;
     count = booksLoaded;
     booksLoaded += amount;
   } else {
-    displayCount = fetchedBooks.length
+    displayCount = fetchedBooks.length;
     row = 0;
     count = 0;
   }
 
   while (count < displayCount) {
-    const screensize = $("#bookContainer").width();
+    let screensize;
+    if (rental === true) {
+      screensize = $("#reservedContainer").width();
+    } else {
+      screensize = $("#bookContainer").width();
+    }
     var booksPerRow = 3;
     if (screensize >= 1000) {
       booksPerRow = 6;
@@ -231,9 +254,15 @@ function displayBooks(fetchedBooks, rental = false, amount) {
     //Decide wether to make a new row
     if (count % booksPerRow == 0) {
       row = Math.floor(count / booksPerRow);
-      $("#bookContainer").append(
-        '<div class="row" id="bookRow' + row + '"></div>'
-      );
+      if (rental === true) {
+        $("#reservedContainer").append(
+          '<div class="row" id="reservedRow' + row + '"></div>'
+        );
+      } else {
+        $("#bookContainer").append(
+          '<div class="row" id="bookRow' + row + '"></div>'
+        );
+      }
     }
 
     let bookString = makeBookCard(fetchedBooks[count], rental);
@@ -278,12 +307,7 @@ function displayBooks(fetchedBooks, rental = false, amount) {
                               console.log(json[c]);
                           }
                           c += 1;
-                      }  
-
-                      if (copy_id === undefined){
-                        M.toast({html: '<p class="card-text">Book is not available right now</p>'});
-                        return
-                      } 
+                      }
 
                       if ($("#" + bookId).text() != ""){
                           $("#" + bookId).empty()
@@ -300,16 +324,22 @@ function displayBooks(fetchedBooks, rental = false, amount) {
                           if (copy_id !== undefined){
                             extendedCardString += '<p class="card-text" style="color: green">available</p>' + 
                             '</div>'
+                            extendedCardString +=
+                            '<div class="card-action">' +
+                                '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
+                                '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ', ' + copy_id  + ')">Rent this book</a>' +
+                            '</div>'
                           } else {
                             extendedCardString += '<p class="card-text" style="color: red">not available right now</p>' + 
                             '</div>'
+                            extendedCardString +=
+                            '<div class="card-action">' +
+                                '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
+                                '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ', ' + copy_id  + ')">Reserve this book</a>' +
+                            '</div>'
                           }
+                          
 
-                          extendedCardString +=
-                          '<div class="card-action">' +
-                              '<p class="card-text">Duration (in days): <input type="number" value="5" min="1" max="10" id="duration' + bookId + '"/></p>' +
-                              '<a class="waves-effect waves-light btn-small" onclick="rentBook(' + bookId + ', ' + copy_id  + ')">Rent this book</a>' +
-                          '</div>'
                           $("#" + bookId).append(extendedCardString)
                       } 
                       return
@@ -364,7 +394,12 @@ function displayBooks(fetchedBooks, rental = false, amount) {
             </script>
             `;
     }
-    $("#bookRow" + row).append(bookString);
+
+    if (rental === true) {
+      $("#reservedRow" + row).append(bookString);
+    } else {
+      $("#bookRow" + row).append(bookString);
+    }
     count += 1;
   }
 }
@@ -419,7 +454,13 @@ function loadRentalList(bookList) {
       fetch(url, { method: "GET" }).then(res => {
         res.json().then(json => {
           if (json.length > 0) {
-            $("#bookContainer").append("<h5>Active Loans</h5>");
+            $("#activeContainer").append(
+              `<div id="activeCaptionContainer" style="display: flex; justify-content: space-between;"></div>`
+            );
+            $("#activeCaptionContainer").append("<h5>Active Loans</h5>");
+            $("#activeCaptionContainer").append(
+              `<a class="waves-effect btn-flat" onClick="$('#logoutContainer').empty(); $('#reservedContainer').empty(); $('#activeContainer').empty(); $('#myAccount').click()">Refresh</a>`
+            );
             appendActiveRentals(makeRentalList(bookList, json));
           }
         });
@@ -432,7 +473,7 @@ function appendActiveRentals(rentals) {
   var row = 0;
   var count = 0;
   while (count < rentals.length) {
-    const screensize = $("#bookContainer").width();
+    const screensize = $("#activeContainer").width();
     var booksPerRow = 3;
     if (screensize >= 1000) {
       booksPerRow = 6;
@@ -441,8 +482,8 @@ function appendActiveRentals(rentals) {
     //Decide wether to make a new row
     if (count % booksPerRow == 0) {
       row = Math.floor(count / booksPerRow);
-      $("#bookContainer").append(
-        '<div class="row" id="bookRow' + row + '"></div>'
+      $("#activeContainer").append(
+        '<div class="row" id="activeRow' + row + '"></div>'
       );
     }
 
@@ -492,7 +533,7 @@ function appendActiveRentals(rentals) {
           }
       </script>
       `;
-      $("#bookRow" + row).append(bookString);
+      $("#activeRow" + row).append(bookString);
       count += 1;
     }
   }
@@ -535,6 +576,12 @@ $("#feedButton").click(function() {
 
 function wipePage() {
   $("#bookContainer").empty();
+  $("#reservedContainer")
+    .empty()
+    .css("display", "none");
+  $("#activeContainer")
+    .empty()
+    .css("display", "none");
   $("#newBookContainer").empty();
   $("#newBookContainer").removeClass("z-depth-4");
   $("#logoutContainer").empty();
