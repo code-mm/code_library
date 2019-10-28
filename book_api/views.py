@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from django.contrib.postgres.search import TrigramSimilarity
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -59,9 +59,7 @@ class BookNew(APIView):
 # search
 class Search(APIView):
     def get(self, request, search_term):
-        vector = SearchVector('title1', 'title2', 'author', 'isbn', 'designation', 'subject')
-        search_query = SearchQuery(search_term)
-        books = models.Book.objects.annotate(rank=SearchRank(vector, search_query)).order_by('-rank')
+        books = models.Book.objects.annotate(similarity=TrigramSimilarity('title1', search_term) + TrigramSimilarity('title2', search_term) + TrigramSimilarity('author', search_term) + TrigramSimilarity('isbn', search_term) + TrigramSimilarity('designation', search_term) + TrigramSimilarity('subject', search_term),).filter(similarity__gte=0.1).order_by('-similarity')
         books_serialized = serializers.Book(books, many=True)
         return Response(books_serialized.data)
 
